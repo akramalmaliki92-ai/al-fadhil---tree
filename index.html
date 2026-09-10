@@ -129,6 +129,7 @@
       </div>
       <div id="statBox" class="stat"></div>
       <div id="photoBox" style="display:none"><img id="photo" alt="" style="max-width:150px;border-radius:18px;border:2px solid #dcd3c4"></div>
+      <div id="contactBox" class="chips" style="display:none"></div>
       <div id="sonsBox" style="display:flex;flex-direction:column;gap:8px">
         <div class="lbl" id="sonsLbl"></div>
         <div id="sons" class="chips"></div>
@@ -143,7 +144,7 @@
         <div class="tabs">
           <button id="tC" class="small on">تعليق</button>
           <button id="tN" class="small">إضافة ابن</button>
-          <button id="tI" class="small">معلومات</button>
+          <button id="tI" class="small">معلومات واتصال</button>
         </div>
         <div id="fName" style="display:none;flex-direction:column;gap:8px">
           <div class="muted" style="font-weight:400;white-space:normal">سيُضاف كابن للشخص المفتوح في البطاقة — تأكد أنك اخترت الأب الصحيح.</div>
@@ -156,6 +157,18 @@
           </div>
           <input id="iCity" type="text" placeholder="مكان السكن">
           <input id="iPhoto" type="text" placeholder="رابط صورة شخصية (اختياري)">
+          <div class="lbl" style="margin-top:2px">معلومات الاتصال</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input id="iPhone" type="tel" placeholder="رقم الهاتف" style="flex:1 1 150px">
+            <input id="iWhats" type="tel" placeholder="واتساب (إن اختلف)" style="flex:1 1 150px">
+          </div>
+          <input id="iEmail" type="email" placeholder="البريد الإلكتروني">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input id="iInsta" type="text" placeholder="انستقرام @" style="flex:1 1 130px">
+            <input id="iTg" type="text" placeholder="تلقرام @" style="flex:1 1 130px">
+            <input id="iFb" type="text" placeholder="فيسبوك" style="flex:1 1 130px">
+          </div>
+          <div class="muted" style="font-weight:400;white-space:normal">ما تكتبه هنا يظهر لكل من يفتح الرابط — لا تدرج رقمًا لغيرك دون إذنه.</div>
         </div>
         <textarea id="note" rows="3" placeholder="اكتب ملاحظتك…"></textarea>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -446,6 +459,23 @@ function render(){
   if(info.city)st.appendChild(el('span',null,info.city));
   $('photoBox').style.display=info.photo?'block':'none';
   if(info.photo)$('photo').src=info.photo;
+  var contact=[];
+  var tel=function(v){return String(v).replace(/[^0-9+]/g,'')};
+  var handle=function(v){return String(v).replace(/^@/,'')};
+  if(info.phone)contact.push({t:'☎ '+info.phone,h:'tel:'+tel(info.phone)});
+  if(info.whatsapp||info.phone)contact.push({t:'واتساب',h:'https://wa.me/'+tel(info.whatsapp||info.phone)});
+  if(info.email)contact.push({t:'بريد',h:'mailto:'+info.email});
+  if(info.instagram)contact.push({t:'انستقرام',h:'https://instagram.com/'+handle(info.instagram)});
+  if(info.telegram)contact.push({t:'تلقرام',h:'https://t.me/'+handle(info.telegram)});
+  if(info.facebook)contact.push({t:'فيسبوك',h:/^https?:/.test(info.facebook)?info.facebook:'https://facebook.com/'+handle(info.facebook)});
+  var cbx=$('contactBox');cbx.innerHTML='';
+  cbx.style.display=contact.length?'flex':'none';
+  contact.forEach(function(c){
+    var a2=document.createElement('a');
+    a2.className='chip';a2.href=c.h;a2.target='_blank';a2.rel='noopener';
+    a2.style.textDecoration='none';a2.textContent=c.t;
+    cbx.appendChild(a2);
+  });
   $('sonsBox').style.display=r.kids.length?'flex':'none';
   $('sonsLbl').textContent='الأبناء ('+r.kids.length+')';
   var sb=$('sons');sb.innerHTML='';
@@ -507,13 +537,18 @@ $('bSend').onclick=function(){
   try{localStorage.setItem('family-tree-by',by)}catch(e){}
   var payload={path:sel,by:by,type:formType,note:$('note').value};
   if(formType==='correction')payload.name=$('iName').value;
-  if(formType==='info'){payload.birth=$('iBirth').value;payload.death=$('iDeath').value;payload.city=$('iCity').value;payload.photo=$('iPhoto').value}
-  if(!String(payload.note||'').trim()&&!payload.name&&!payload.birth&&!payload.death&&!payload.city&&!payload.photo){$('sendMsg').textContent='اكتب شيئًا قبل الإرسال';return}
+  if(formType==='info'){
+    payload.birth=$('iBirth').value;payload.death=$('iDeath').value;payload.city=$('iCity').value;payload.photo=$('iPhoto').value;
+    payload.phone=$('iPhone').value;payload.whatsapp=$('iWhats').value;payload.email=$('iEmail').value;
+    payload.instagram=$('iInsta').value;payload.telegram=$('iTg').value;payload.facebook=$('iFb').value;
+  }
+  var filled=['name','birth','death','city','photo','phone','whatsapp','email','instagram','telegram','facebook'].some(function(k){return String(payload[k]||'').trim()});
+  if(!String(payload.note||'').trim()&&!filled){$('sendMsg').textContent='اكتب شيئًا قبل الإرسال';return}
   $('sendMsg').textContent='جارٍ الإرسال…';
   fetch(HOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
    .then(function(res){if(!res.ok)throw 0;
      $('sendMsg').textContent='تم الإرسال — سيظهر بعد الموافقة';
-     $('note').value='';$('iName').value='';$('iBirth').value='';$('iDeath').value='';$('iCity').value='';$('iPhoto').value='';
+     ['note','iName','iBirth','iDeath','iCity','iPhoto','iPhone','iWhats','iEmail','iInsta','iTg','iFb'].forEach(function(id){$(id).value=''});
    })
    .catch(function(){$('sendMsg').textContent='تعذّر الإرسال — حاول مرة أخرى'});
 };
