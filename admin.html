@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مراجعة طلبات شجرة الفاضل</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rakkas&family=Almarai:wght@400;700;800&display=swap">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#f5ead8;color:#201e1d;font-family:'Almarai',system-ui,sans-serif;padding:24px clamp(12px,3vw,30px) 60px}
+  h1{margin:0 0 4px;font-family:'Rakkas',serif;font-weight:400;font-size:clamp(28px,5vw,40px)}
+  p.sub{margin:0 0 22px;color:#645c50;font-size:15px;line-height:1.7;max-width:60ch}
+  .item{background:#ebddc5;border:2px solid #dcd3c4;border-radius:22px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+  .who{font-size:13px;color:#645c50;font-weight:700}
+  .path{font-size:13px;font-weight:800;color:#8c491a}
+  .body{font-size:16px;line-height:1.8;background:#f9f4ed;border:2px solid #dcd3c4;border-radius:16px;padding:10px 14px}
+  .tag{display:inline-block;padding:4px 12px;border-radius:999px;background:#e1eecc;border:2px solid #ccdbb2;color:#3d472b;font-size:12px;font-weight:800}
+  .acts{display:flex;gap:8px;flex-wrap:wrap}
+  button{padding:10px 18px;border-radius:999px;border:2px solid #dcd3c4;background:#f9f4ed;color:#474238;font-family:'Almarai';font-size:15px;font-weight:800;cursor:pointer;min-height:44px}
+  button.ok{background:#7a8a5e;border-color:#5f6b49;color:#f5ead8}
+  button.no{background:#f9f4ed;border-color:#dcd3c4;color:#8c491a}
+  input{padding:10px 16px;border-radius:999px;border:2px solid #dcd3c4;background:#f9f4ed;font-family:'Almarai';font-size:16px}
+  .muted{color:#645c50;font-size:14px}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+</style>
+</head>
+<body>
+<h1>مراجعة الطلبات</h1>
+<p class="sub">كل ما ترسله العائلة من ملاحظات وتصحيحات يظهر هنا. الموافقة تنشره للجميع، والرفض يحذفه.</p>
+
+<div class="bar">
+  <input id="key" type="password" placeholder="مفتاح المراجعة" style="flex:1 1 200px">
+  <button id="reload">تحديث القائمة</button>
+  <span id="status" class="muted"></span>
+</div>
+
+<div id="list"></div>
+
+<script>
+var DATA_URL='https://raw.githubusercontent.com/akramalmaliki92-ai/al-fadhil---tree/main/data.json';
+var HOOK='https://baytalqasid.app.n8n.cloud/webhook/family-tree-moderate';
+var $=function(i){return document.getElementById(i)};
+var pending=[];
+
+try{
+  var k=new URLSearchParams(location.search).get('key');
+  if(k)$('key').value=k; else $('key').value=localStorage.getItem('fadhil-key')||'';
+}catch(e){}
+
+function label(t){return t==='info'?'معلومات':(t==='correction'?'تصحيح / إضافة اسم':'تعليق')}
+function draw(){
+  var box=$('list');box.innerHTML='';
+  if(!pending.length){box.innerHTML='<p class="muted">لا توجد طلبات معلّقة.</p>';return}
+  pending.forEach(function(it){
+    var d=document.createElement('div');d.className='item';
+    var head='<span class="tag">'+label(it.type)+'</span> <span class="path">'+String(it.path).replace(/ \/ /g,' ← ')+'</span>';
+    var bits=[];
+    if(it.name)bits.push('الاسم: '+it.name);
+    if(it.birth)bits.push('ميلاد: '+it.birth);
+    if(it.death)bits.push('وفاة: '+it.death);
+    if(it.city)bits.push('السكن: '+it.city);
+    if(it.photo)bits.push('صورة: '+it.photo);
+    if(it.note)bits.push(it.note);
+    d.innerHTML='<div>'+head+'</div><div class="body">'+bits.join('<br>')+'</div>'+
+      '<div class="who">'+(it.by||'')+' — '+String(it.at||'').slice(0,16).replace('T',' ')+'</div>';
+    var acts=document.createElement('div');acts.className='acts';
+    var ok=document.createElement('button');ok.className='ok';ok.textContent='موافقة ونشر';
+    var no=document.createElement('button');no.className='no';no.textContent='رفض';
+    ok.onclick=function(){send(it.id,'approve')};
+    no.onclick=function(){send(it.id,'reject')};
+    acts.appendChild(ok);acts.appendChild(no);
+    d.appendChild(acts);box.appendChild(d);
+  });
+}
+function load(){
+  $('status').textContent='جارٍ التحميل…';
+  fetch(DATA_URL+'?t='+Date.now()).then(function(r){return r.ok?r.json():null}).then(function(j){
+    pending=(j&&j.pending)||[];
+    $('status').textContent=pending.length?pending.length+' طلب معلّق':'لا جديد';
+    draw();
+  }).catch(function(){$('status').textContent='تعذّر التحميل'});
+}
+function send(id,action){
+  var key=$('key').value.trim();
+  if(!key){$('status').textContent='أدخل مفتاح المراجعة';return}
+  try{localStorage.setItem('fadhil-key',key)}catch(e){}
+  $('status').textContent='جارٍ التنفيذ…';
+  fetch(HOOK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:key,id:id,action:action})})
+    .then(function(r){return r.json().catch(function(){return{}})})
+    .then(function(res){
+      if(res&&res.ok===false){$('status').textContent='المفتاح غير صحيح';return}
+      pending=pending.filter(function(x){return x.id!==id});
+      $('status').textContent=action==='approve'?'تمت الموافقة — تظهر للعائلة خلال دقيقة':'تم الرفض';
+      draw();
+    })
+    .catch(function(){$('status').textContent='تعذّر التنفيذ'});
+}
+$('reload').onclick=load;
+load();
+</script>
+</body>
+</html>
