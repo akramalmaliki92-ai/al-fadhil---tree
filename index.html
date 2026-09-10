@@ -456,11 +456,23 @@ function render(){
   });
   var cb=$('cmts');cb.innerHTML='';
   var list=(a.comments||[]).concat((a.adds||[]).map(function(x){return{note:'اسم مقترح: '+(x.name||'')+(x.note?' — '+x.note:''),by:x.by,at:x.at}}));
-  if(!list.length)cb.appendChild(el('div','muted','لا ملاحظات على هذا الشخص'));
+  if(!list.length)cb.appendChild(el('div','muted','لا ملاحظات على هذا الشخص — ابدأ المحادثة أدناه'));
   list.forEach(function(c){
     var d=el('div','cmt');
+    if(c.admin){d.style.background='#e1eecc';d.style.borderColor='#ccdbb2';d.style.marginInlineStart='22px'}
     d.appendChild(el('p',null,c.note));
-    d.appendChild(el('div','who',(c.by||'')+(c.at?' — '+String(c.at).slice(0,10):'')));
+    var w=el('div','who',(c.admin?'إدارة الشجرة · ':'')+(c.by||'')+(c.at?' — '+String(c.at).slice(0,10):''));
+    d.appendChild(w);
+    var rb=el('button','small','رد');
+    rb.style.alignSelf='flex-start';
+    rb.onclick=function(){
+      formType='comment';render();
+      var t=$('note');
+      t.value='رداً على '+(c.by||'الملاحظة')+': ';
+      t.focus();
+      try{t.setSelectionRange(t.value.length,t.value.length)}catch(e){}
+    };
+    d.appendChild(rb);
     cb.appendChild(d);
   });
   $('tC').className='small'+(formType==='comment'?' on':'');
