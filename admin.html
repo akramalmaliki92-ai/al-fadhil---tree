@@ -114,7 +114,7 @@ var REPO='https://raw.githubusercontent.com/akramalmaliki92-ai/al-fadhil---tree/
 var EDIT='https://baytalqasid.app.n8n.cloud/webhook/family-tree-edit';
 var MOD='https://baytalqasid.app.n8n.cloud/webhook/family-tree-moderate';
 var $=function(i){return document.getElementById(i)};
-var key='',slug='',tree=null,paths=[],pending=[],trees=[];
+var key='',slug='',tree=null,paths=[],pending=[],trees=[],handled={};
 
 function K(){return $('key').value.trim()}
 function bust(u){return REPO+u+'?t='+Date.now()}
@@ -182,24 +182,33 @@ function loadMainForMerge(){
 }
 function loadPending(){
   return fetch(bust('data.json')).then(function(r){return r.ok?r.json():null}).then(function(j){
-    pending=(j&&j.pending)||[];drawPending();
+    var list=(j&&j.pending)||[];
+    pending=list.filter(function(x){return !handled[x.id]});
+    drawPending();
   }).catch(function(){$('pStatus').textContent='تعذّر التحميل'});
 }
 function loadAll(){loadTreeList();loadTree();loadMainForMerge();loadPending()}
 $('reload').onclick=loadAll;
 $('treeSel').onchange=function(){slug=this.value;loadTree()};
 
-function post(url,body,okMsg){
+function decide(it,action,msg){
+  handled[it.id]=1;
+  pending=pending.filter(function(x){return x.id!==it.id});
+  drawPending();
+  return post(MOD,{key:K(),id:it.id,action:action},msg,true);
+}
+function post(url,body,okMsg,noReload){
   $('status').textContent='جارٍ التنفيذ…';
+  $('pStatus').textContent='جارٍ التنفيذ…';
   return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(function(r){return r.json().catch(function(){return{}})})
     .then(function(res){
-      if(res&&res.ok===false){$('status').textContent=res.reason==='unauthorized'?'المفتاح غير صحيح':('تعذّر: '+(res.reason||'خطأ'));return false}
-      $('status').textContent=okMsg;
-      setTimeout(loadAll,1500);
+      if(res&&res.ok===false){var m=res.reason==='unauthorized'?'المفتاح غير صحيح':('تعذّر: '+(res.reason||'خطأ'));$('status').textContent=m;$('pStatus').textContent=m;return false}
+      $('status').textContent=okMsg;$('pStatus').textContent=okMsg;
+      if(!noReload)setTimeout(loadAll,1500);
       return true;
     })
-    .catch(function(){$('status').textContent='تعذّر الاتصال';return false});
+    .catch(function(){$('status').textContent='تعذّر الاتصال';$('pStatus').textContent='تعذّر الاتصال';return false});
 }
 function edit(extra,msg){
   var body=Object.assign({key:K(),slug:slug},extra);
@@ -253,19 +262,19 @@ function drawPending(){
       '<div>'+bits.join('<br>')+'</div><div class="who">'+(it.by||'')+' — '+String(it.at||'').slice(0,16).replace('T',' ')+'</div>';
     var row=document.createElement('div');row.className='row';
     var ok=document.createElement('button');ok.className='ok';ok.textContent='نشر كملاحظة';
-    ok.onclick=function(){post(MOD,{key:K(),id:it.id,action:'approve'},'تم النشر')};
+    ok.onclick=function(){decide(it,'approve','تم النشر — يظهر للعائلة خلال دقيقة')};
     row.appendChild(ok);
     if(it.type==='correction'&&it.name){
       var addBtn=document.createElement('button');addBtn.textContent='إضافة كاسم في الشجرة';
       addBtn.onclick=function(){
         edit({action:'add',path:it.path,name:it.name},'أُضيف إلى الشجرة').then(function(okk){
-          if(okk)post(MOD,{key:K(),id:it.id,action:'reject'},'أُضيف وأُزيل من الطلبات');
+          if(okk)decide(it,'reject','أُضيف إلى الشجرة وأُزيل من الطلبات');
         });
       };
       row.appendChild(addBtn);
     }
     var no=document.createElement('button');no.className='warn';no.textContent='رفض';
-    no.onclick=function(){post(MOD,{key:K(),id:it.id,action:'reject'},'تم الرفض')};
+    no.onclick=function(){decide(it,'reject','تم الرفض')};
     row.appendChild(no);
     d.appendChild(row);box.appendChild(d);
   });
