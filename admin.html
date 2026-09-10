@@ -84,6 +84,30 @@
   </div>
 
   <div class="panel">
+    <h2>معلومات واتصال الشخص المختار</h2>
+    <p class="sub" style="margin:0">تنطبق على الشخص المختار في القائمة أعلاه، وتُنشر فورًا. اترك الخانة فارغة لحذف المعلومة.</p>
+    <div class="row">
+      <input id="eBirth" type="text" placeholder="سنة الميلاد" style="flex:1 1 120px">
+      <input id="eDeath" type="text" placeholder="سنة الوفاة" style="flex:1 1 120px">
+      <input id="eCity" type="text" placeholder="مكان السكن" style="flex:1 1 160px">
+    </div>
+    <div class="row">
+      <input id="ePhone" type="tel" placeholder="رقم الهاتف" style="flex:1 1 150px">
+      <input id="eWhats" type="tel" placeholder="واتساب" style="flex:1 1 150px">
+      <input id="eEmail" type="email" placeholder="البريد" style="flex:1 1 180px">
+    </div>
+    <div class="row">
+      <input id="eInsta" type="text" placeholder="انستقرام" style="flex:1 1 130px">
+      <input id="eTg" type="text" placeholder="تلقرام" style="flex:1 1 130px">
+      <input id="eFb" type="text" placeholder="فيسبوك" style="flex:1 1 130px">
+    </div>
+    <div class="row">
+      <input id="ePhoto" type="text" placeholder="رابط الصورة" style="flex:1 1 240px">
+      <button id="bInfo" class="ok">حفظ المعلومات</button>
+    </div>
+  </div>
+
+  <div class="panel">
     <h2>شجرة جديدة</h2>
     <p class="sub" style="margin:0">تُبنى مستقلة، ثم تدمجها في شجرة الفاضل متى شئت فتنضم بكل ذريتها تحت الشخص الذي تختاره.</p>
     <div class="row">
@@ -107,6 +131,15 @@
     <div id="list"></div>
   </div>
 
+  <div class="panel">
+    <div class="row" style="justify-content:space-between">
+      <h2>المحادثات</h2>
+      <span id="cStatus" class="muted"></span>
+    </div>
+    <p class="sub" style="margin:0">ردّك يُنشر فورًا بلا مراجعة، ويظهر داخل محادثة الشخص بلون مميّز.</p>
+    <div id="threads"></div>
+  </div>
+
 </div>
 
 <script>
@@ -114,7 +147,7 @@ var REPO='https://raw.githubusercontent.com/akramalmaliki92-ai/al-fadhil---tree/
 var EDIT='https://baytalqasid.app.n8n.cloud/webhook/family-tree-edit';
 var MOD='https://baytalqasid.app.n8n.cloud/webhook/family-tree-moderate';
 var $=function(i){return document.getElementById(i)};
-var key='',slug='',tree=null,paths=[],pending=[],trees=[],handled={};
+var key='',slug='',tree=null,paths=[],pending=[],trees=[],handled={},approved={};
 
 function K(){return $('key').value.trim()}
 function bust(u){return REPO+u+'?t='+Date.now()}
@@ -184,8 +217,44 @@ function loadPending(){
   return fetch(bust('data.json')).then(function(r){return r.ok?r.json():null}).then(function(j){
     var list=(j&&j.pending)||[];
     pending=list.filter(function(x){return !handled[x.id]});
-    drawPending();
+    approved=(j&&j.approved)||{};
+    drawPending();drawThreads();fillInfo();
   }).catch(function(){$('pStatus').textContent='تعذّر التحميل'});
+}
+function drawThreads(){
+  var box=$('threads');box.innerHTML='';
+  var keys=Object.keys(approved).filter(function(p){return (approved[p].comments||[]).length});
+  $('cStatus').textContent=keys.length?keys.length+' محادثة':'لا محادثات';
+  if(!keys.length){box.innerHTML='<p class="muted">لا توجد محادثات بعد.</p>';return}
+  keys.forEach(function(p){
+    var d=document.createElement('div');d.className='item';
+    var h=document.createElement('div');
+    h.innerHTML='<span class="path">'+String(p).replace(/ \/ /g,' ← ')+'</span>';
+    d.appendChild(h);
+    (approved[p].comments||[]).forEach(function(c,i){
+      var m=document.createElement('div');
+      m.style.cssText='border:2px solid '+(c.admin?'#ccdbb2':'#dcd3c4')+';background:'+(c.admin?'#e1eecc':'#f9f4ed')+';border-radius:16px;padding:9px 13px;margin-top:8px';
+      var txt=document.createElement('div');txt.style.cssText='font-size:15px;line-height:1.7';txt.textContent=c.note;
+      var who=document.createElement('div');who.className='who';
+      who.textContent=(c.admin?'إدارة الشجرة · ':'')+(c.by||'')+' — '+String(c.at||'').slice(0,10);
+      m.appendChild(txt);m.appendChild(who);
+      var del=document.createElement('button');del.className='warn';del.textContent='حذف';
+      del.style.cssText='min-height:32px;padding:5px 12px;font-size:13px;margin-top:6px';
+      del.onclick=function(){if(confirm('حذف هذه الرسالة؟'))post(MOD,{key:K(),action:'deleteComment',path:p,at:i},'تم الحذف');};
+      m.appendChild(del);
+      d.appendChild(m);
+    });
+    var row=document.createElement('div');row.className='row';row.style.marginTop='10px';
+    var inp=document.createElement('input');inp.type='text';inp.placeholder='اكتب ردّك…';inp.style.flex='1 1 220px';
+    var send=document.createElement('button');send.className='ok';send.textContent='إرسال الرد';
+    send.onclick=function(){
+      var v=inp.value.trim();
+      if(!v){$('cStatus').textContent='اكتب الرد';return}
+      post(MOD,{key:K(),action:'reply',path:p,note:v,by:'إدارة الشجرة'},'تم نشر الرد').then(function(ok){if(ok)inp.value=''});
+    };
+    row.appendChild(inp);row.appendChild(send);
+    d.appendChild(row);box.appendChild(d);
+  });
 }
 function loadAll(){loadTreeList();loadTree();loadMainForMerge();loadPending()}
 $('reload').onclick=loadAll;
@@ -244,7 +313,19 @@ $('bMerge').onclick=function(){
   post(EDIT,{key:K(),action:'mergeTree',slug:slug,targetPath:t},'تم الدمج').then(function(ok){if(ok)slug=''});
 };
 
-function label(t){return t==='info'?'معلومات':(t==='correction'?'تصحيح / إضافة اسم':'تعليق')}
+var INFO_MAP={birth:'eBirth',death:'eDeath',city:'eCity',phone:'ePhone',whatsapp:'eWhats',email:'eEmail',instagram:'eInsta',telegram:'eTg',facebook:'eFb',photo:'ePhoto'};
+function fillInfo(){
+  var p=$('person').value,info=(approved[p]&&approved[p].info)||{};
+  Object.keys(INFO_MAP).forEach(function(k){var e=$(INFO_MAP[k]);if(e)e.value=info[k]||''});
+}
+$('person').onchange=fillInfo;
+$('bInfo').onclick=function(){
+  var body={key:K(),action:'setInfo',path:$('person').value};
+  Object.keys(INFO_MAP).forEach(function(k){body[k]=$(INFO_MAP[k]).value});
+  post(MOD,body,'تم حفظ المعلومات');
+};
+
+function label(t){return t==='info'?'معلومات واتصال':(t==='correction'?'إضافة ابن':'تعليق')}
 function drawPending(){
   var box=$('list');box.innerHTML='';
   $('pStatus').textContent=pending.length?pending.length+' طلب معلّق':'لا طلبات';
@@ -256,6 +337,12 @@ function drawPending(){
     if(it.birth)bits.push('ميلاد: '+it.birth);
     if(it.death)bits.push('وفاة: '+it.death);
     if(it.city)bits.push('السكن: '+it.city);
+    if(it.phone)bits.push('الهاتف: '+it.phone);
+    if(it.whatsapp)bits.push('واتساب: '+it.whatsapp);
+    if(it.email)bits.push('البريد: '+it.email);
+    if(it.instagram)bits.push('انستقرام: '+it.instagram);
+    if(it.telegram)bits.push('تلقرام: '+it.telegram);
+    if(it.facebook)bits.push('فيسبوك: '+it.facebook);
     if(it.photo)bits.push('صورة: '+it.photo);
     if(it.note)bits.push(it.note);
     d.innerHTML='<div><span class="tag">'+label(it.type)+'</span> <span class="path">'+String(it.path).replace(/ \/ /g,' ← ')+'</span></div>'+
