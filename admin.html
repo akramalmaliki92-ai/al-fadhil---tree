@@ -5,57 +5,243 @@
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>مراجعة طلبات شجرة الفاضل</title>
+<title>إدارة شجرة الفاضل</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rakkas&family=Almarai:wght@400;700;800&display=swap">
 <style>
   *{box-sizing:border-box}
-  body{margin:0;background:#f5ead8;color:#201e1d;font-family:'Almarai',system-ui,sans-serif;padding:24px clamp(12px,3vw,30px) 60px}
-  h1{margin:0 0 4px;font-family:'Rakkas',serif;font-weight:400;font-size:clamp(28px,5vw,40px)}
-  p.sub{margin:0 0 22px;color:#645c50;font-size:15px;line-height:1.7;max-width:60ch}
-  .item{background:#ebddc5;border:2px solid #dcd3c4;border-radius:22px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
-  .who{font-size:13px;color:#645c50;font-weight:700}
-  .path{font-size:13px;font-weight:800;color:#8c491a}
-  .body{font-size:16px;line-height:1.8;background:#f9f4ed;border:2px solid #dcd3c4;border-radius:16px;padding:10px 14px}
-  .tag{display:inline-block;padding:4px 12px;border-radius:999px;background:#e1eecc;border:2px solid #ccdbb2;color:#3d472b;font-size:12px;font-weight:800}
-  .acts{display:flex;gap:8px;flex-wrap:wrap}
-  button{padding:10px 18px;border-radius:999px;border:2px solid #dcd3c4;background:#f9f4ed;color:#474238;font-family:'Almarai';font-size:15px;font-weight:800;cursor:pointer;min-height:44px}
+  body{margin:0;background:#f5ead8;color:#201e1d;font-family:'Almarai',system-ui,sans-serif;padding:22px clamp(12px,3vw,30px) 60px}
+  h1{margin:0 0 4px;font-family:'Rakkas',serif;font-weight:400;font-size:clamp(26px,5vw,38px)}
+  h2{margin:0;font-family:'Rakkas',serif;font-weight:400;font-size:24px}
+  p.sub{margin:0 0 18px;color:#645c50;font-size:15px;line-height:1.7;max-width:62ch}
+  .panel{background:#ebddc5;border:2px solid #dcd3c4;border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .lbl{font-size:13px;font-weight:800;color:#474238}
+  button{padding:10px 17px;border-radius:999px;border:2px solid #dcd3c4;background:#f9f4ed;color:#474238;font-family:'Almarai';font-size:15px;font-weight:800;cursor:pointer;min-height:44px}
   button.ok{background:#7a8a5e;border-color:#5f6b49;color:#f5ead8}
-  button.no{background:#f9f4ed;border-color:#dcd3c4;color:#8c491a}
-  input{padding:10px 16px;border-radius:999px;border:2px solid #dcd3c4;background:#f9f4ed;font-family:'Almarai';font-size:16px}
+  button.warn{background:#fff2eb;border-color:#ffe1d0;color:#8c491a}
+  button:hover{filter:brightness(.97)}
+  input,select,textarea{padding:10px 16px;border-radius:999px;border:2px solid #dcd3c4;background:#f9f4ed;font-family:'Almarai';font-size:16px;color:#201e1d;min-width:0}
+  select{min-height:44px}
   .muted{color:#645c50;font-size:14px}
-  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+  .item{background:#f9f4ed;border:2px solid #dcd3c4;border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+  .tag{display:inline-block;padding:4px 12px;border-radius:999px;background:#e1eecc;border:2px solid #ccdbb2;color:#3d472b;font-size:12px;font-weight:800}
+  .path{font-size:13px;font-weight:800;color:#8c491a}
+  .who{font-size:12px;color:#645c50;font-weight:700}
+  .gate{max-width:420px}
+  .hidden{display:none!important}
+  a{color:#8c491a}
 </style>
 </head>
 <body>
-<h1>مراجعة الطلبات</h1>
-<p class="sub">كل ما ترسله العائلة من ملاحظات وتصحيحات يظهر هنا. الموافقة تنشره للجميع، والرفض يحذفه.</p>
+<h1>إدارة شجرة الفاضل</h1>
+<p class="sub">هذه الصفحة خاصة بك. كل تعديل يتطلّب مفتاح الإدارة، ولا يُقبل أي تغيير بدونه.</p>
 
-<div class="bar">
-  <input id="key" type="password" placeholder="مفتاح المراجعة" style="flex:1 1 200px">
-  <button id="reload">تحديث القائمة</button>
-  <span id="status" class="muted"></span>
+<div id="gate" class="panel gate">
+  <div class="lbl">مفتاح الإدارة</div>
+  <div class="row">
+    <input id="key" type="password" placeholder="أدخل المفتاح" style="flex:1 1 200px">
+    <button id="enter" class="ok">دخول</button>
+  </div>
+  <span id="gateMsg" class="muted"></span>
 </div>
 
-<div id="list"></div>
+<div id="app" class="hidden">
+
+  <div class="panel">
+    <div class="row" style="justify-content:space-between">
+      <h2>الشجرة قيد التحرير</h2>
+      <span id="status" class="muted"></span>
+    </div>
+    <div class="row">
+      <select id="treeSel" style="flex:1 1 220px"></select>
+      <button id="reload">تحديث</button>
+      <a href="./" target="_blank"><button type="button">فتح الشجرة العامة</button></a>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>تعديل الأسماء</h2>
+    <div class="lbl">اختر الشخص</div>
+    <select id="person" size="12" style="border-radius:18px;font-size:15px"></select>
+    <div class="lbl">إضافة أبناء لهذا الشخص</div>
+    <div class="row">
+      <input id="addName" type="text" placeholder="اسم واحد أو عدة أسماء بينها فاصلة" style="flex:1 1 260px">
+      <button id="bAdd" class="ok">إضافة</button>
+    </div>
+    <div class="lbl">تعديل الاسم</div>
+    <div class="row">
+      <input id="newName" type="text" placeholder="الاسم الجديد" style="flex:1 1 220px">
+      <button id="bRename">حفظ الاسم</button>
+    </div>
+    <div class="lbl">نقل هذا الشخص (بذريته) إلى أب آخر</div>
+    <div class="row">
+      <select id="newParent" style="flex:1 1 260px"></select>
+      <button id="bMove">نقل</button>
+    </div>
+    <div class="row">
+      <button id="bRemove" class="warn">حذف هذا الشخص وذريته</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>شجرة جديدة</h2>
+    <p class="sub" style="margin:0">تُبنى مستقلة، ثم تدمجها في شجرة الفاضل متى شئت فتنضم بكل ذريتها تحت الشخص الذي تختاره.</p>
+    <div class="row">
+      <input id="ntTitle" type="text" placeholder="عنوان الشجرة (مثال: حمولة البكر)" style="flex:1 1 220px">
+      <input id="ntSlug" type="text" placeholder="معرّف لاتيني (bakr)" style="flex:1 1 140px">
+      <input id="ntRoot" type="text" placeholder="اسم الجدّ الأعلى" style="flex:1 1 160px">
+      <button id="bCreate" class="ok">إنشاء</button>
+    </div>
+    <div class="lbl">دمج الشجرة المفتوحة حاليًا في شجرة الفاضل</div>
+    <div class="row">
+      <select id="mergeTarget" style="flex:1 1 260px"></select>
+      <button id="bMerge" class="warn">دمج هنا</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="row" style="justify-content:space-between">
+      <h2>طلبات العائلة</h2>
+      <span id="pStatus" class="muted"></span>
+    </div>
+    <div id="list"></div>
+  </div>
+
+</div>
 
 <script>
-var DATA_URL='https://raw.githubusercontent.com/akramalmaliki92-ai/al-fadhil---tree/main/data.json';
-var HOOK='https://baytalqasid.app.n8n.cloud/webhook/family-tree-moderate';
+var REPO='https://raw.githubusercontent.com/akramalmaliki92-ai/al-fadhil---tree/main/';
+var EDIT='https://baytalqasid.app.n8n.cloud/webhook/family-tree-edit';
+var MOD='https://baytalqasid.app.n8n.cloud/webhook/family-tree-moderate';
 var $=function(i){return document.getElementById(i)};
-var pending=[];
+var key='',slug='',tree=null,paths=[],pending=[],trees=[];
 
+function K(){return $('key').value.trim()}
+function bust(u){return REPO+u+'?t='+Date.now()}
+
+$('enter').onclick=function(){
+  key=K();
+  if(!key){$('gateMsg').textContent='أدخل المفتاح';return}
+  try{localStorage.setItem('fadhil-key',key)}catch(e){}
+  $('gate').classList.add('hidden');$('app').classList.remove('hidden');
+  loadAll();
+};
 try{
-  var k=new URLSearchParams(location.search).get('key');
-  if(k)$('key').value=k; else $('key').value=localStorage.getItem('fadhil-key')||'';
+  var q=new URLSearchParams(location.search).get('key');
+  $('key').value=q||localStorage.getItem('fadhil-key')||'';
 }catch(e){}
 
+function flatten(node,parent,out){
+  var path=parent?parent+' / '+node.name:node.name;
+  out.push({path:path,name:node.name,depth:parent?path.split(' / ').length-1:0});
+  (node.kids||[]).forEach(function(k){flatten(k,path,out)});
+  return out;
+}
+function fillSelects(){
+  paths=flatten(tree,'',[]);
+  var mk=function(sel,keepValue){
+    var prev=keepValue?sel.value:'';
+    sel.innerHTML='';
+    paths.forEach(function(p){
+      var o=document.createElement('option');
+      o.value=p.path;
+      o.textContent=(p.depth?Array(p.depth+1).join('— '):'')+p.name;
+      sel.appendChild(o);
+    });
+    if(prev)sel.value=prev;
+  };
+  mk($('person'),true);mk($('newParent'),true);
+  $('status').textContent=paths.length+' اسمًا في هذه الشجرة';
+}
+function loadTreeList(){
+  return fetch(bust('trees.json')).then(function(r){return r.ok?r.json():[]}).catch(function(){return[]}).then(function(j){
+    trees=Array.isArray(j)?j:[];
+    var sel=$('treeSel');sel.innerHTML='';
+    var o=document.createElement('option');o.value='';o.textContent='شجرة الفاضل (الرئيسية)';sel.appendChild(o);
+    trees.forEach(function(t){
+      var e=document.createElement('option');e.value=t.slug;e.textContent=t.title||t.slug;sel.appendChild(e);
+    });
+    sel.value=slug;
+  });
+}
+function loadTree(){
+  var file=slug?('tree-'+slug+'.json'):'tree.json';
+  return fetch(bust(file)).then(function(r){return r.ok?r.json():null}).then(function(j){
+    tree=j||{name:'?',kids:[]};fillSelects();
+  }).catch(function(){$('status').textContent='تعذّر تحميل الشجرة'});
+}
+function loadMainForMerge(){
+  return fetch(bust('tree.json')).then(function(r){return r.ok?r.json():null}).then(function(j){
+    var sel=$('mergeTarget');sel.innerHTML='';
+    if(!j)return;
+    flatten(j,'',[]).forEach(function(p){
+      var o=document.createElement('option');o.value=p.path;
+      o.textContent=(p.depth?Array(p.depth+1).join('— '):'')+p.name;sel.appendChild(o);
+    });
+  }).catch(function(){});
+}
+function loadPending(){
+  return fetch(bust('data.json')).then(function(r){return r.ok?r.json():null}).then(function(j){
+    pending=(j&&j.pending)||[];drawPending();
+  }).catch(function(){$('pStatus').textContent='تعذّر التحميل'});
+}
+function loadAll(){loadTreeList();loadTree();loadMainForMerge();loadPending()}
+$('reload').onclick=loadAll;
+$('treeSel').onchange=function(){slug=this.value;loadTree()};
+
+function post(url,body,okMsg){
+  $('status').textContent='جارٍ التنفيذ…';
+  return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(function(r){return r.json().catch(function(){return{}})})
+    .then(function(res){
+      if(res&&res.ok===false){$('status').textContent=res.reason==='unauthorized'?'المفتاح غير صحيح':('تعذّر: '+(res.reason||'خطأ'));return false}
+      $('status').textContent=okMsg;
+      setTimeout(loadAll,1500);
+      return true;
+    })
+    .catch(function(){$('status').textContent='تعذّر الاتصال';return false});
+}
+function edit(extra,msg){
+  var body=Object.assign({key:K(),slug:slug},extra);
+  return post(EDIT,body,msg);
+}
+$('bAdd').onclick=function(){
+  var nm=$('addName').value.trim();
+  if(!nm){$('status').textContent='اكتب الاسم';return}
+  edit({action:'add',path:$('person').value,name:nm},'تمت الإضافة — تظهر في الشجرة خلال دقيقة').then(function(ok){if(ok)$('addName').value=''});
+};
+$('bRename').onclick=function(){
+  var nm=$('newName').value.trim();
+  if(!nm){$('status').textContent='اكتب الاسم الجديد';return}
+  edit({action:'rename',path:$('person').value,name:nm},'تم تعديل الاسم').then(function(ok){if(ok)$('newName').value=''});
+};
+$('bMove').onclick=function(){
+  edit({action:'move',path:$('person').value,newParent:$('newParent').value},'تم النقل');
+};
+$('bRemove').onclick=function(){
+  var p=$('person').value;
+  if(!confirm('حذف «'+p.split(' / ').pop()+'» وكل ذريته؟'))return;
+  edit({action:'remove',path:p},'تم الحذف');
+};
+$('bCreate').onclick=function(){
+  var t=$('ntTitle').value.trim(),s=$('ntSlug').value.trim(),r=$('ntRoot').value.trim();
+  if(!s||!r){$('status').textContent='المعرّف واسم الجدّ إلزاميان';return}
+  post(EDIT,{key:K(),action:'createTree',newSlug:s,title:t||r,name:r},'تم إنشاء الشجرة');
+};
+$('bMerge').onclick=function(){
+  if(!slug){$('status').textContent='اختر شجرة فرعية أولًا من الأعلى';return}
+  var t=$('mergeTarget').value;
+  if(!confirm('دمج هذه الشجرة تحت «'+t.split(' / ').pop()+'» في شجرة الفاضل؟'))return;
+  post(EDIT,{key:K(),action:'mergeTree',slug:slug,targetPath:t},'تم الدمج').then(function(ok){if(ok)slug=''});
+};
+
 function label(t){return t==='info'?'معلومات':(t==='correction'?'تصحيح / إضافة اسم':'تعليق')}
-function draw(){
+function drawPending(){
   var box=$('list');box.innerHTML='';
-  if(!pending.length){box.innerHTML='<p class="muted">لا توجد طلبات معلّقة.</p>';return}
+  $('pStatus').textContent=pending.length?pending.length+' طلب معلّق':'لا طلبات';
+  if(!pending.length){box.innerHTML='<p class="muted">لا توجد طلبات.</p>';return}
   pending.forEach(function(it){
     var d=document.createElement('div');d.className='item';
-    var head='<span class="tag">'+label(it.type)+'</span> <span class="path">'+String(it.path).replace(/ \/ /g,' ← ')+'</span>';
     var bits=[];
     if(it.name)bits.push('الاسم: '+it.name);
     if(it.birth)bits.push('ميلاد: '+it.birth);
@@ -63,42 +249,27 @@ function draw(){
     if(it.city)bits.push('السكن: '+it.city);
     if(it.photo)bits.push('صورة: '+it.photo);
     if(it.note)bits.push(it.note);
-    d.innerHTML='<div>'+head+'</div><div class="body">'+bits.join('<br>')+'</div>'+
-      '<div class="who">'+(it.by||'')+' — '+String(it.at||'').slice(0,16).replace('T',' ')+'</div>';
-    var acts=document.createElement('div');acts.className='acts';
-    var ok=document.createElement('button');ok.className='ok';ok.textContent='موافقة ونشر';
-    var no=document.createElement('button');no.className='no';no.textContent='رفض';
-    ok.onclick=function(){send(it.id,'approve')};
-    no.onclick=function(){send(it.id,'reject')};
-    acts.appendChild(ok);acts.appendChild(no);
-    d.appendChild(acts);box.appendChild(d);
+    d.innerHTML='<div><span class="tag">'+label(it.type)+'</span> <span class="path">'+String(it.path).replace(/ \/ /g,' ← ')+'</span></div>'+
+      '<div>'+bits.join('<br>')+'</div><div class="who">'+(it.by||'')+' — '+String(it.at||'').slice(0,16).replace('T',' ')+'</div>';
+    var row=document.createElement('div');row.className='row';
+    var ok=document.createElement('button');ok.className='ok';ok.textContent='نشر كملاحظة';
+    ok.onclick=function(){post(MOD,{key:K(),id:it.id,action:'approve'},'تم النشر')};
+    row.appendChild(ok);
+    if(it.type==='correction'&&it.name){
+      var addBtn=document.createElement('button');addBtn.textContent='إضافة كاسم في الشجرة';
+      addBtn.onclick=function(){
+        edit({action:'add',path:it.path,name:it.name},'أُضيف إلى الشجرة').then(function(okk){
+          if(okk)post(MOD,{key:K(),id:it.id,action:'reject'},'أُضيف وأُزيل من الطلبات');
+        });
+      };
+      row.appendChild(addBtn);
+    }
+    var no=document.createElement('button');no.className='warn';no.textContent='رفض';
+    no.onclick=function(){post(MOD,{key:K(),id:it.id,action:'reject'},'تم الرفض')};
+    row.appendChild(no);
+    d.appendChild(row);box.appendChild(d);
   });
 }
-function load(){
-  $('status').textContent='جارٍ التحميل…';
-  fetch(DATA_URL+'?t='+Date.now()).then(function(r){return r.ok?r.json():null}).then(function(j){
-    pending=(j&&j.pending)||[];
-    $('status').textContent=pending.length?pending.length+' طلب معلّق':'لا جديد';
-    draw();
-  }).catch(function(){$('status').textContent='تعذّر التحميل'});
-}
-function send(id,action){
-  var key=$('key').value.trim();
-  if(!key){$('status').textContent='أدخل مفتاح المراجعة';return}
-  try{localStorage.setItem('fadhil-key',key)}catch(e){}
-  $('status').textContent='جارٍ التنفيذ…';
-  fetch(HOOK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:key,id:id,action:action})})
-    .then(function(r){return r.json().catch(function(){return{}})})
-    .then(function(res){
-      if(res&&res.ok===false){$('status').textContent='المفتاح غير صحيح';return}
-      pending=pending.filter(function(x){return x.id!==id});
-      $('status').textContent=action==='approve'?'تمت الموافقة — تظهر للعائلة خلال دقيقة':'تم الرفض';
-      draw();
-    })
-    .catch(function(){$('status').textContent='تعذّر التنفيذ'});
-}
-$('reload').onclick=load;
-load();
 </script>
 </body>
 </html>
