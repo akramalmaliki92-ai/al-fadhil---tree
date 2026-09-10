@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>شجرة حمولة الفاضل</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rakkas&family=Almarai:wght@400;700;800&display=swap">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:#f5ead8;color:#201e1d;font-family:'Almarai',system-ui,-apple-system,sans-serif}
+  .wrap{min-height:100vh;padding:18px clamp(12px,3vw,30px) 40px;display:flex;flex-direction:column;gap:16px}
+  .bar{position:sticky;top:0;z-index:20;background:#f5ead8;padding:6px 0 12px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px}
+  h1{margin:0;font-family:'Rakkas',serif;font-weight:400;font-size:clamp(28px,6vw,44px);line-height:1.05}
+  .kicker{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;letter-spacing:.06em;color:#8c491a}
+  .dot{width:12px;height:12px;border-radius:999px;background:#c67139}
+  .btns{display:flex;flex-wrap:wrap;gap:8px}
+  button,label.file{padding:12px 18px;border-radius:999px;border:2px solid #dcd3c4;background:#f9f4ed;color:#474238;font-family:'Almarai';font-size:15px;font-weight:800;cursor:pointer;white-space:nowrap;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+  button.on{background:#c67139;border-color:#b2622d;color:#fff2eb}
+  button.mini{width:44px;height:44px;padding:0;font-size:20px;line-height:1}
+  button:hover,label.file:hover{filter:brightness(.97)}
+  :focus-visible{outline:2px solid #c67139;outline-offset:2px}
+  .tools{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  input[type=search],textarea{padding:10px 18px;border-radius:999px;border:2px solid #dcd3c4;background:#f9f4ed;font-family:'Almarai';font-size:16px;color:#201e1d}
+  input[type=search]{flex:1 1 200px;min-width:0}
+  textarea{border-radius:18px;line-height:1.7;resize:vertical;width:100%}
+  .muted{font-size:13px;font-weight:800;color:#645c50;white-space:nowrap}
+  .pane{border-radius:24px;background:#f9f4ed;border:2px solid #dcd3c4;padding:14px 12px;overflow:auto;-webkit-overflow-scrolling:touch;min-height:340px}
+  .sizer{position:relative}
+  .inner{position:absolute;top:0;right:0;width:max-content;transform-origin:top right}
+  .grid{display:grid;gap:18px;align-items:start}
+  .card{border-radius:24px;background:#ebddc5;border:2px solid #dcd3c4;padding:20px 18px;display:flex;flex-direction:column;gap:14px}
+  .card h2{margin:0;font-family:'Rakkas',serif;font-weight:400;font-size:30px;line-height:1.15}
+  .chain{font-size:14px;line-height:1.8;color:#645c50}
+  .rule{height:2px;background:#dcd3c4}
+  .lbl{font-size:13px;font-weight:800;color:#474238}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{padding:6px 14px;border-radius:999px;border:2px solid #ffe1d0;background:#fff2eb;color:#8c491a;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Almarai'}
+  .node{display:flex;flex-direction:column;align-items:center;flex:0 0 auto}
+  .pill{padding:7px 16px;border-radius:999px;white-space:nowrap;cursor:pointer;font-size:15px;font-weight:700;background:#fff2eb;border:2px solid #ffe1d0;color:#8c491a}
+  .pill.top{padding:9px 20px;font-size:17px;font-weight:800;background:#ebddc5;border-color:#dcd3c4;color:#201e1d}
+  .pill.sel{background:#c67139;border-color:#b2622d;color:#fff2eb;box-shadow:0 3px 10px rgba(46,43,37,.16)}
+  .pill.noted{outline:2px solid #7a8a5e;outline-offset:2px}
+  .stem{width:2px;height:20px;background:#c0b6a5}
+  .row{display:flex;align-items:flex-start;justify-content:center;width:max-content}
+  .kid{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;position:relative;padding:0 8px}
+  .kid .rail{position:absolute;top:0;height:2px;background:#c0b6a5}
+  .lrow{display:flex;align-items:center;gap:8px;cursor:pointer;padding:3px 4px}
+  .cx{width:20px;height:20px;flex:0 0 auto;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#8c491a;background:#fff2eb;border:1px solid #ffe1d0}
+  .cx.leaf{color:#c0b6a5;background:transparent;border-color:transparent}
+  .hit{background:#e1eecc!important;border-color:#ccdbb2!important;color:#3d472b!important}
+  .note-dot{width:8px;height:8px;border-radius:999px;background:#7a8a5e}
+  .foot{font-size:13px;line-height:1.8;color:#645c50;max-width:70ch}
+  @media(max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+  @media(max-width:700px){
+    .bar{position:static}
+    .btns{width:100%}
+    .btns button,.btns label.file{flex:1 1 auto}
+    .tools{gap:8px}
+    input[type=search]{flex:1 1 100%}
+    .pill{font-size:16px;padding:8px 15px}
+    .pill.top{font-size:17px;padding:9px 18px}
+    .lrow{padding:6px 4px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <div class="kicker"><span class="dot"></span><span>بني مالك ← آل إبراهيم ← عشائر الحمودي</span></div>
+      <h1>حمولة الفاضل</h1>
+    </div>
+    <div class="btns">
+      <button id="bGraph" class="on">مخطط الشجرة</button>
+      <button id="bList">قائمة</button>
+      <button id="bExport">تصدير الملاحظات</button>
+      <label class="file">استيراد<input id="fImport" type="file" accept="application/json" hidden></label>
+    </div>
+  </div>
+
+  <div class="tools">
+    <input id="q" type="search" placeholder="ابحث عن اسم…">
+    <span id="count" class="muted"></span>
+    <span id="depthBox" style="display:flex;align-items:center;gap:8px">
+      <span class="muted">الأجيال</span>
+      <button id="dDown" class="mini">−</button>
+      <span id="dLbl" class="muted" style="min-width:26px;text-align:center">الكل</span>
+      <button id="dUp" class="mini">+</button>
+      <button id="bUp">للأعلى ↑</button>
+    </span>
+  </div>
+
+  <div id="grid" class="grid">
+    <div id="pane" class="pane"></div>
+    <div id="card" class="card" style="display:none">
+      <div>
+        <div class="lbl" style="color:#8c491a;font-size:12px">البطاقة</div>
+        <h2 id="cName"></h2>
+        <div id="cChain" class="chain"></div>
+      </div>
+      <div id="sonsBox" style="display:flex;flex-direction:column;gap:8px">
+        <div class="lbl" id="sonsLbl"></div>
+        <div id="sons" class="chips"></div>
+      </div>
+      <div class="rule"></div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <div class="lbl">ملاحظات</div>
+        <textarea id="note" rows="4" placeholder="اكتب ملاحظتك — تصحيح اسم، تاريخ، أو أي معلومة."></textarea>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <span class="muted" style="font-weight:400">تُحفظ في هذا الجهاز</span>
+        <button id="bClear">مسح ملاحظة هذا الشخص</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="foot">الملاحظات تُحفظ في متصفح كل شخص. لتجميعها: يضغط كل واحد «تصدير الملاحظات» ويرسل الملف، ثم يُدمج عبر «استيراد».</p>
+</div>
+
+<script>
+var n=function(name){var kids=[].slice.call(arguments,1);return{name:name,kids:kids}};
+var TREE=n('فاضل',
+ n('حسن',n('تركي',
+  n('كريبيل',n('صادق (صويدج)',
+   n('كزار',
+    n('صخي',
+     n('لازم',
+      n('هادي',n('مصطفى'),n('مرتضى'),n('عبد الرحمن')),
+      n('شاكر',n('حازم',n('حسن')),n('حيدر',n('سجاد')),n('حسام')),
+      n('رياض',n('احمد'),n('أسامة'),n('سجاد'),n('حسنين')),
+      n('علي',n('اكرم',n('يمان')),n('ذو الفقار',n('اسد')),n('أبو الحسن')),
+      n('حسين',n('لازم'),n('لبيب'))),
+     n('غانم',
+      n('عبدالحسين',n('زيد'),n('مصطفى',n('محمد')),n('عقيل'),n('يوسف')),
+      n('صخي',n('غانم',n('عبدالله')),n('محمد',n('زيد'))),
+      n('فاضل',n('خالد'),n('عمار')),
+      n('حميد',n('قائد'),n('كرار')),
+      n('طارق',n('ياسر'),n('هشام'),n('بلال')))),
+    n('عريبي',n('معتوق',n('حامد',n('علي'),n('حسنين'),n('كريم'),n('حيدر'),n('ايمن'),n('قيصر'))))),
+   n('جابر (يوبر)',n('مطير',n('خلف',n('سالم'),n('علي'),n('حسين'),n('احمد'),n('جاسم'),n('منتظر')))),
+   n('شبير',
+    n('علكم',
+     n('سلمان',n('عدنان'),n('داود'),n('قيس'),n('احمد'),n('سعد'),n('محمد')),
+     n('نصار',n('مالك'),n('عباس'),n('مازن'),n('ساجد')),
+     n('جبار',n('صباح'))),
+    n('صبر',
+     n('غالي',n('عباس')),
+     n('شمخي',n('فلاح'),n('عادل'),n('هاشم'),n('كاظم'),n('خالد')),
+     n('رمضان',n('تركي'),n('كاظم'),n('حسن'),n('محسن'))),
+    n('حسين')),
+   n('صويحي',n('عاشور',n('عباس'),n('علي'),n('حمزة')),n('عبد السيد')),
+   n('رستم'),
+   n('سالم',n('مهريج',n('حسين',n('ثابت',n('علي'),n('رعد'),n('كريم'),n('فاضل'),n('غانم'))))),
+   n('عبدالله'))),
+  n('فدعم',n('حاجم',
+   n('دهش',n('عويد',n('اسكند',n('محيل',n('حسين'),n('جاسم'),n('علي'),n('احمد'))))),
+   n('شليش',n('جاسم',n('بصيو',n('كاظم'),n('صادق'),n('جاسم')))),
+   n('مشحوت',n('حسن',n('عبود',n('وهاب'),n('مهدي'),n('صالح')))))))),
+ n('حسين',n('فياض',
+  n('فوزان',n('دفار',n('فارس',n('عوفي'),n('كاظم')))),
+  n('موزان',
+   n('حمدان',n('حسن (دكسن)',n('علي'),n('عبد السيد'),n('مجيد'),n('محمد'))),
+   n('مبارك',n('سعيد'),n('حشيش',n('سلمان')),n('طهيوش')),
+   n('فرج',n('تومان')),
+   n('عطيه')))));
+
+var KEY='family-tree-fadhil-v1';
+var index=[],byPath={};
+(function walk(node,parent,chain){
+  var path=parent?parent+' / '+node.name:node.name;
+  var rec={name:node.name,path:path,chain:chain,kids:node.kids||[],depth:chain.length};
+  index.push(rec);byPath[path]=rec;
+  rec.kids.forEach(function(k){walk(k,path,chain.concat(node.name))});
+})(TREE,'',[]);
+var ROOT=index[0];
+
+var data={};try{data=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){data={}}
+var view='graph',sel=ROOT.path,depth=(window.innerWidth<700?2:3),open={},query='';
+index.forEach(function(r){if(r.depth<4&&r.kids.length)open[r.path]=1});
+
+var $=function(id){return document.getElementById(id)};
+var pane=$('pane');
+
+function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
+function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+function matches(){
+  if(!query.trim())return null;
+  var keep={};
+  index.forEach(function(r){
+    if(r.name.indexOf(query.trim())!==-1){keep[r.path]='hit';
+      var p=r.path;while(p.indexOf(' / ')!==-1){p=p.slice(0,p.lastIndexOf(' / '));if(!keep[p])keep[p]='a'}}
+  });
+  return keep;
+}
+function pillFor(rec){
+  var p=el('div','pill'+(rec.depth<4?' top':'')+(sel===rec.path?' sel':'')+(data[rec.path]&&data[rec.path].note?' noted':''),rec.name);
+  p.onclick=function(){sel=rec.path;depth=99;render()};
+  return p;
+}
+function graph(rec,levels){
+  var wrap=el('div','node');
+  wrap.appendChild(pillFor(rec));
+  if(rec.kids.length&&levels>0){
+    wrap.appendChild(el('div','stem'));
+    var row=el('div','row');
+    rec.kids.forEach(function(k,i){
+      var child=byPath[rec.path+' / '+k.name];
+      var box=el('div','kid');
+      if(rec.kids.length>1){
+        var rail=el('div','rail');
+        var last=i===rec.kids.length-1;
+        if(last){rail.style.right='0';rail.style.width='50%'}
+        else if(i===0){rail.style.left='0';rail.style.width='50%'}
+        else{rail.style.left='0';rail.style.width='100%'}
+        box.appendChild(rail);
+      }
+      box.appendChild(el('div','stem'));
+      box.appendChild(graph(child,levels-1));
+      row.appendChild(box);
+    });
+    wrap.appendChild(row);
+  }else if(rec.kids.length){
+    wrap.appendChild(el('div','stem'));
+    var more=el('div','chip','+'+rec.kids.length);
+    more.onclick=function(){sel=rec.path;depth=99;render()};
+    wrap.appendChild(more);
+  }
+  return wrap;
+}
+function listRows(rec,keep,out){
+  var isOpen=keep?true:!!open[rec.path];
+  var row=el('div','lrow');
+  row.style.marginInlineStart=(rec.depth*16)+'px';
+  var cx=el('span','cx'+(rec.kids.length?'':' leaf'),rec.kids.length?(isOpen?'−':'+'):'·');
+  if(rec.kids.length)cx.onclick=function(ev){ev.stopPropagation();open[rec.path]=!open[rec.path];render()};
+  row.appendChild(cx);
+  var p=pillFor(rec);
+  if(keep&&keep[rec.path]==='hit')p.classList.add('hit');
+  row.appendChild(p);
+  if(rec.kids.length)row.appendChild(el('span','muted',String(rec.kids.length)));
+  if(data[rec.path]&&data[rec.path].note)row.appendChild(el('span','note-dot'));
+  out.appendChild(row);
+  if(rec.kids.length&&isOpen)rec.kids.forEach(function(k){
+    var c=byPath[rec.path+' / '+k.name];
+    if(keep&&!keep[c.path])return;
+    listRows(c,keep,out);
+  });
+}
+// transform:scale أوثق من zoom على iOS؛ ومعه صندوق مقاس يحفظ التمرير
+function fit(sizer,inner){
+  inner.style.transform='none';
+  var w=inner.scrollWidth||inner.offsetWidth,h=inner.scrollHeight||inner.offsetHeight;
+  var avail=pane.clientWidth-4;
+  var floor=window.innerWidth<700?.4:.55;
+  var s=(w&&avail)?Math.max(floor,Math.min(1,avail/w)):1;
+  inner.style.transform='scale('+s+')';
+  sizer.style.width=Math.ceil(w*s)+'px';
+  sizer.style.height=Math.ceil(h*s)+'px';
+  var p=pane.querySelector('.pill.sel');
+  if(p){var r=p.getBoundingClientRect(),v=pane.getBoundingClientRect();
+    pane.scrollLeft+=(r.left+r.width/2)-(v.left+v.width/2);
+    pane.scrollTop+=(r.top)-(v.top)-14;}
+}
+function render(){
+  var keep=matches(),rec=byPath[sel]||ROOT;
+  pane.innerHTML='';
+  $('bGraph').className=view==='graph'?'on':'';
+  $('bList').className=view==='list'?'on':'';
+  $('depthBox').style.display=view==='graph'?'flex':'none';
+  $('card').style.display=view==='graph'?'none':'flex';
+  $('grid').style.gridTemplateColumns=(view==='graph'||window.innerWidth<900)?'minmax(0,1fr)':'minmax(0,1.35fr) minmax(0,1fr)';
+  pane.style.height=view==='graph'?(window.innerWidth<700?'calc(100vh - 260px)':'calc(100vh - 230px)'):'60vh';
+  $('count').textContent=keep?(Object.keys(keep).filter(function(p){return keep[p]==='hit'}).length+' نتيجة'):(index.length+' اسمًا');
+  $('dLbl').textContent=depth>=99?'الكل':depth;
+
+  if(view==='graph'&&!keep){
+    var sizer=el('div','sizer');
+    var inner=el('div','inner');
+    inner.style.cssText+='display:flex;justify-content:center;padding:6px 4px 14px';
+    inner.appendChild(graph(rec,depth));
+    sizer.appendChild(inner);
+    pane.appendChild(sizer);
+    fit(sizer,inner);
+  }else{
+    var box=el('div');box.style.cssText='display:flex;flex-direction:column;gap:3px';
+    listRows(ROOT,keep,box);
+    pane.appendChild(box);
+  }
+  $('cName').textContent=rec.name;
+  var chain=rec.chain.slice().reverse();
+  $('cChain').textContent=chain.length?'بن '+chain.join(' بن '):'الجدّ الأعلى للحمولة';
+  $('sonsBox').style.display=rec.kids.length?'flex':'none';
+  $('sonsLbl').textContent='الأبناء ('+rec.kids.length+')';
+  var sb=$('sons');sb.innerHTML='';
+  rec.kids.forEach(function(k){
+    var c=el('button','chip',k.name);
+    c.onclick=function(){sel=rec.path+' / '+k.name;render()};
+    sb.appendChild(c);
+  });
+  $('note').value=(data[sel]&&data[sel].note)||'';
+}
+
+$('bGraph').onclick=function(){view='graph';query='';$('q').value='';render()};
+$('bList').onclick=function(){view='list';render()};
+$('q').oninput=function(e){query=e.target.value;render()};
+$('dUp').onclick=function(){depth=depth>=8?99:depth+1;render()};
+$('dDown').onclick=function(){depth=depth>=99?8:Math.max(1,depth-1);render()};
+$('bUp').onclick=function(){var p=sel.lastIndexOf(' / ');if(p!==-1)sel=sel.slice(0,p);depth=99;render()};
+$('note').oninput=function(e){
+  var v=e.target.value;
+  if(v.trim())data[sel]={note:v};else delete data[sel];
+  save();
+};
+$('bClear').onclick=function(){delete data[sel];save();render()};
+$('bExport').onclick=function(){
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='ملاحظات-شجرة-الفاضل.json';a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href)},2000);
+};
+$('fImport').onchange=function(e){
+  var f=e.target.files&&e.target.files[0];if(!f)return;
+  var fr=new FileReader();
+  fr.onload=function(){
+    try{var inc=JSON.parse(fr.result);
+      Object.keys(inc).forEach(function(p){data[p]=inc[p]});
+      save();render();
+    }catch(err){alert('تعذّر قراءة الملف')}
+  };
+  fr.readAsText(f);e.target.value='';
+};
+window.addEventListener('resize',render);
+window.addEventListener('orientationchange',render);
+render();
+</script>
+</body>
+</html>
