@@ -19,14 +19,15 @@
   .kicker{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;letter-spacing:.06em;color:#8c491a}
   .dot{width:12px;height:12px;border-radius:999px;background:#c67139}
   .btns{display:flex;flex-wrap:wrap;gap:8px}
-  button,label.file{padding:12px 18px;border-radius:999px;border:2px solid #dcd3c4;background:#f9f4ed;color:#474238;font-family:'Almarai';font-size:15px;font-weight:800;cursor:pointer;white-space:nowrap;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+  button,label.file{padding:11px 17px;border-radius:999px;border:2px solid #dcd3c4;background:#f9f4ed;color:#474238;font-family:'Almarai';font-size:15px;font-weight:800;cursor:pointer;white-space:nowrap;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
   button.on{background:#c67139;border-color:#b2622d;color:#fff2eb}
   button.mini{width:44px;height:44px;padding:0;font-size:20px;line-height:1}
-  button:hover,label.file:hover{filter:brightness(.97)}
+  button.small{min-height:36px;padding:7px 14px;font-size:14px}
+  button:hover{filter:brightness(.97)}
   :focus-visible{outline:2px solid #c67139;outline-offset:2px}
   .tools{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
-  input[type=search],textarea{padding:10px 18px;border-radius:999px;border:2px solid #dcd3c4;background:#f9f4ed;font-family:'Almarai';font-size:16px;color:#201e1d}
-  input[type=search]{flex:1 1 200px;min-width:0}
+  input,textarea{padding:10px 16px;border-radius:999px;border:2px solid #dcd3c4;background:#f9f4ed;font-family:'Almarai';font-size:16px;color:#201e1d}
+  input{min-width:0}
   textarea{border-radius:18px;line-height:1.7;resize:vertical;width:100%}
   .muted{font-size:13px;font-weight:800;color:#645c50;white-space:nowrap}
   .pane{border-radius:24px;background:#f9f4ed;border:2px solid #dcd3c4;padding:14px 12px;overflow:auto;-webkit-overflow-scrolling:touch;min-height:340px}
@@ -40,6 +41,11 @@
   .lbl{font-size:13px;font-weight:800;color:#474238}
   .chips{display:flex;flex-wrap:wrap;gap:7px}
   .chip{padding:6px 14px;border-radius:999px;border:2px solid #ffe1d0;background:#fff2eb;color:#8c491a;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Almarai'}
+  .stat{display:flex;flex-wrap:wrap;gap:7px}
+  .stat span{padding:5px 12px;border-radius:999px;background:#e1eecc;border:2px solid #ccdbb2;color:#3d472b;font-size:13px;font-weight:800;white-space:nowrap}
+  .cmt{background:#f9f4ed;border:2px solid #dcd3c4;border-radius:18px;padding:10px 14px;display:flex;flex-direction:column;gap:4px}
+  .cmt p{margin:0;font-size:15px;line-height:1.75}
+  .cmt .who{font-size:12px;color:#645c50;font-weight:700}
   .node{display:flex;flex-direction:column;align-items:center;flex:0 0 auto}
   .pill{padding:7px 16px;border-radius:999px;white-space:nowrap;cursor:pointer;font-size:15px;font-weight:700;background:#fff2eb;border:2px solid #ffe1d0;color:#8c491a}
   .pill.top{padding:9px 20px;font-size:17px;font-weight:800;background:#ebddc5;border-color:#dcd3c4;color:#201e1d}
@@ -61,16 +67,16 @@
   .hit{background:#e1eecc!important;border-color:#ccdbb2!important;color:#3d472b!important}
   .note-dot{width:8px;height:8px;border-radius:999px;background:#7a8a5e}
   .foot{font-size:13px;line-height:1.8;color:#645c50;max-width:70ch}
+  .all{display:none;flex-direction:column;gap:12px;border-radius:24px;background:#ebddc5;border:2px solid #dcd3c4;padding:20px 18px}
+  .form{display:flex;flex-direction:column;gap:8px}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap}
   @media(max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
   @media(max-width:700px){
     .bar{position:static}
     .btns{width:100%}
-    .btns button,.btns label.file{flex:1 1 auto}
-    .tools{gap:8px}
+    .btns button{flex:1 1 auto}
     input[type=search]{flex:1 1 100%}
     .pill{font-size:16px;padding:8px 15px}
-    .pill.top{font-size:17px;padding:9px 18px}
-    .lrow{padding:6px 4px}
   }
 </style>
 </head>
@@ -87,12 +93,15 @@
       <button id="bR">دائري</button>
       <button id="bList">قائمة</button>
       <button id="bCard">البطاقة</button>
+      <button id="bAll">كل الملاحظات</button>
       <button id="bLink">نسخ الرابط</button>
+      <button id="bImg">صورة</button>
+      <button id="bPdf">طباعة PDF</button>
     </div>
   </div>
 
   <div class="tools">
-    <input id="q" type="search" placeholder="ابحث عن اسم…">
+    <input id="q" type="search" placeholder="ابحث عن اسم…" style="flex:1 1 200px">
     <span id="count" class="muted"></span>
     <span id="depthBox" style="display:flex;align-items:center;gap:8px">
       <span class="muted">الأجيال</span>
@@ -103,6 +112,14 @@
     </span>
   </div>
 
+  <div id="allBox" class="all">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <div class="lbl" style="font-size:16px">كل الملاحظات المعتمدة</div>
+      <span id="allCount" class="muted"></span>
+    </div>
+    <div id="allList" style="display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+
   <div id="grid" class="grid">
     <div id="pane" class="pane"></div>
     <div id="card" class="card" style="display:none">
@@ -111,29 +128,46 @@
         <h2 id="cName"></h2>
         <div id="cChain" class="chain"></div>
       </div>
+      <div id="statBox" class="stat"></div>
+      <div id="photoBox" style="display:none"><img id="photo" alt="" style="max-width:150px;border-radius:18px;border:2px solid #dcd3c4"></div>
       <div id="sonsBox" style="display:flex;flex-direction:column;gap:8px">
         <div class="lbl" id="sonsLbl"></div>
         <div id="sons" class="chips"></div>
       </div>
       <div class="rule"></div>
-      <div id="sharedBox" style="display:none;flex-direction:column;gap:6px;background:#f9f4ed;border:2px solid #dcd3c4;border-radius:18px;padding:12px 14px">
-        <div class="lbl" style="color:#3d472b">ملاحظة العائلة</div>
-        <div id="sharedNote" style="font-size:15px;line-height:1.8"></div>
-        <div id="sharedBy" class="muted" style="font-weight:400"></div>
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div class="lbl">ملاحظات العائلة</div>
+        <div id="cmts" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:7px">
-        <div class="lbl">أضف ملاحظة تظهر لكل العائلة</div>
-        <textarea id="note" rows="3" placeholder="تصحيح اسم، إضافة ابن، تاريخ، أو أي معلومة."></textarea>
+      <div class="rule"></div>
+      <div class="form">
+        <div class="tabs">
+          <button id="tC" class="small on">تعليق</button>
+          <button id="tN" class="small">تصحيح / إضافة اسم</button>
+          <button id="tI" class="small">معلومات</button>
+        </div>
+        <div id="fName" style="display:none;flex-direction:column;gap:8px">
+          <input id="iName" type="text" placeholder="الاسم المقترح إضافته أو تصحيحه">
+        </div>
+        <div id="fInfo" style="display:none;flex-direction:column;gap:8px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input id="iBirth" type="text" placeholder="سنة الميلاد" style="flex:1 1 110px">
+            <input id="iDeath" type="text" placeholder="سنة الوفاة" style="flex:1 1 110px">
+          </div>
+          <input id="iCity" type="text" placeholder="مكان السكن">
+          <input id="iPhoto" type="text" placeholder="رابط صورة شخصية (اختياري)">
+        </div>
+        <textarea id="note" rows="3" placeholder="اكتب ملاحظتك…"></textarea>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <input id="by" type="search" placeholder="اسمك" style="flex:1 1 130px">
-          <button id="bSend">إرسال</button>
+          <input id="by" type="text" placeholder="اسمك (إلزامي)" style="flex:1 1 140px">
+          <button id="bSend">إرسال للمراجعة</button>
         </div>
         <span id="sendMsg" class="muted" style="font-weight:400"></span>
       </div>
     </div>
   </div>
 
-  <p class="foot">الملاحظات تُحفظ لكل العائلة وتظهر عند الجميع بعد دقيقة من الإرسال. زر «نسخ الرابط» ينسخ رابطًا يفتح الشجرة على الشخص المختار مباشرة.</p>
+  <p class="foot">كل ملاحظة أو تصحيح يُرسل للمراجعة أولًا، ويظهر للعائلة بعد الموافقة. زر «نسخ الرابط» ينسخ رابطًا يفتح الشجرة على الشخص المختار مباشرة.</p>
 </div>
 
 <script>
@@ -183,9 +217,9 @@ var TREE=n('فاضل',
    n('فرج',n('تومان')),
    n('عطيه')))));
 
-var KEY='family-tree-fadhil-v1';
-var NOTES_URL='https://raw.githubusercontent.com/akramalmaliki92-ai/al-fadhil---tree/main/notes.json';
+var DATA_URL='https://raw.githubusercontent.com/akramalmaliki92-ai/al-fadhil---tree/main/data.json';
 var HOOK_URL='https://baytalqasid.app.n8n.cloud/webhook/family-tree-note';
+
 var index=[],byPath={};
 (function walk(node,parent,chain){
   var path=parent?parent+' / '+node.name:node.name;
@@ -194,21 +228,22 @@ var index=[],byPath={};
   rec.kids.forEach(function(k){walk(k,path,chain.concat(node.name))});
 })(TREE,'',[]);
 var ROOT=index[0];
+index.forEach(function(r){
+  var t=0;(function c(x){x.kids.forEach(function(k){t++;c(byPath[x.path+' / '+k.name])})})(r);
+  r.total=t;
+});
 
-var data={};try{data=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){data={}}
-var shared={};
-var view='graph',mode='v',sel=ROOT.path,depth=(window.innerWidth<700?2:3),open={},query='',cardOpen=false;
-if(location.hash.length>1){
-  try{var h=decodeURIComponent(location.hash.slice(1));if(byPath[h])sel=h;}catch(e){}
-}
+var A={};                     // الملاحظات المعتمدة
+var view='graph',mode='v',sel=ROOT.path,depth=(window.innerWidth<700?2:3),open={},query='',cardOpen=false,allOpen=false,formType='comment';
+if(location.hash.length>1){try{var h=decodeURIComponent(location.hash.slice(1));if(byPath[h])sel=h}catch(e){}}
 index.forEach(function(r){if(r.depth<4&&r.kids.length)open[r.path]=1});
 
 var $=function(id){return document.getElementById(id)};
 var pane=$('pane');
-
-function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
-function noteOf(p){return (shared[p]&&shared[p].note)||(data[p]&&data[p].note)||''}
 function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+function rec_(p){return A[p]||{}}
+function hasNote(p){var a=rec_(p);return !!((a.comments&&a.comments.length)||(a.adds&&a.adds.length)||(a.info&&Object.keys(a.info).length))}
+
 function matches(){
   if(!query.trim())return null;
   var keep={};
@@ -218,93 +253,68 @@ function matches(){
   });
   return keep;
 }
-function pillFor(rec){
-  var p=el('div','pill'+(rec.depth<4?' top':'')+(sel===rec.path?' sel':'')+(noteOf(rec.path)?' noted':''),rec.name);
-  p.onclick=function(){sel=rec.path;depth=99;render()};
+function pillFor(r){
+  var p=el('div','pill'+(r.depth<4?' top':'')+(sel===r.path?' sel':'')+(hasNote(r.path)?' noted':''),r.name);
+  p.onclick=function(){sel=r.path;depth=99;render()};
   return p;
 }
-function graph(rec,levels){
+function graph(r,levels){
   var wrap=el('div','node');
-  wrap.appendChild(pillFor(rec));
-  if(rec.kids.length&&levels>0){
+  wrap.appendChild(pillFor(r));
+  if(r.kids.length&&levels>0){
     wrap.appendChild(el('div','stem'));
     var row=el('div','row');
-    rec.kids.forEach(function(k,i){
-      var child=byPath[rec.path+' / '+k.name];
+    r.kids.forEach(function(k,i){
       var box=el('div','kid');
-      if(rec.kids.length>1){
+      if(r.kids.length>1){
         var rail=el('div','rail');
-        var last=i===rec.kids.length-1;
-        if(last){rail.style.right='0';rail.style.width='50%'}
+        if(i===r.kids.length-1){rail.style.right='0';rail.style.width='50%'}
         else if(i===0){rail.style.left='0';rail.style.width='50%'}
         else{rail.style.left='0';rail.style.width='100%'}
         box.appendChild(rail);
       }
       box.appendChild(el('div','stem'));
-      box.appendChild(graph(child,levels-1));
+      box.appendChild(graph(byPath[r.path+' / '+k.name],levels-1));
       row.appendChild(box);
     });
     wrap.appendChild(row);
-  }else if(rec.kids.length){
+  }else if(r.kids.length){
     wrap.appendChild(el('div','stem'));
-    var more=el('div','chip','+'+rec.kids.length);
-    more.onclick=function(){sel=rec.path;depth=99;render()};
+    var more=el('div','chip','+'+r.kids.length);
+    more.onclick=function(){sel=r.path;depth=99;render()};
     wrap.appendChild(more);
   }
   return wrap;
 }
-function listRows(rec,keep,out){
-  var isOpen=keep?true:!!open[rec.path];
-  var row=el('div','lrow');
-  row.style.marginInlineStart=(rec.depth*16)+'px';
-  var cx=el('span','cx'+(rec.kids.length?'':' leaf'),rec.kids.length?(isOpen?'−':'+'):'·');
-  if(rec.kids.length)cx.onclick=function(ev){ev.stopPropagation();open[rec.path]=!open[rec.path];render()};
-  row.appendChild(cx);
-  var p=pillFor(rec);
-  if(keep&&keep[rec.path]==='hit')p.classList.add('hit');
-  row.appendChild(p);
-  if(rec.kids.length)row.appendChild(el('span','muted',String(rec.kids.length)));
-  if(noteOf(rec.path))row.appendChild(el('span','note-dot'));
-  out.appendChild(row);
-  if(rec.kids.length&&isOpen)rec.kids.forEach(function(k){
-    var c=byPath[rec.path+' / '+k.name];
-    if(keep&&!keep[c.path])return;
-    listRows(c,keep,out);
-  });
-}
-// عرض أفقي: الأب يمينًا والأبناء عمودياً يساره
-function graphH(rec,levels){
+function graphH(r,levels){
   var wrap=el('div','hwrap');
-  wrap.appendChild(pillFor(rec));
-  if(rec.kids.length&&levels>0){
+  wrap.appendChild(pillFor(r));
+  if(r.kids.length&&levels>0){
     wrap.appendChild(el('div','hstem'));
     var col=el('div','hcol');
-    rec.kids.forEach(function(k,i){
-      var child=byPath[rec.path+' / '+k.name];
+    r.kids.forEach(function(k,i){
       var box=el('div','hkid');
-      if(rec.kids.length>1){
+      if(r.kids.length>1){
         var rail=el('div','vrail');
         if(i===0){rail.style.top='50%';rail.style.bottom='0'}
-        else if(i===rec.kids.length-1){rail.style.top='0';rail.style.height='50%'}
+        else if(i===r.kids.length-1){rail.style.top='0';rail.style.height='50%'}
         else{rail.style.top='0';rail.style.bottom='0'}
         box.appendChild(rail);
       }
       box.appendChild(el('div','hstem'));
-      box.appendChild(graphH(child,levels-1));
+      box.appendChild(graphH(byPath[r.path+' / '+k.name],levels-1));
       col.appendChild(box);
     });
     wrap.appendChild(col);
-  }else if(rec.kids.length){
+  }else if(r.kids.length){
     wrap.appendChild(el('div','hstem'));
-    var more=el('div','chip','+'+rec.kids.length);
-    more.onclick=function(){sel=rec.path;depth=99;render()};
+    var more=el('div','chip','+'+r.kids.length);
+    more.onclick=function(){sel=r.path;depth=99;render()};
     wrap.appendChild(more);
   }
   return wrap;
 }
-
-// عرض دائري: الجد في المركز والأجيال حلقات
-function radial(rec,levels){
+function radial(r0,levels){
   var NS='http://www.w3.org/2000/svg';
   function leaves(node,lv){
     if(lv<=0||!node.kids.length)return 1;
@@ -315,8 +325,8 @@ function radial(rec,levels){
   var ring=Math.max(85,Math.min(120,340/Math.max(1,lv)));
   var nodes=[],links=[];
   (function place(node,l,a0,a1,d){
-    var a=(a0+a1)/2,r=d*ring;
-    var pt={x:Math.sin(a)*r,y:-Math.cos(a)*r,rec:node,d:d};
+    var a=(a0+a1)/2,rr=d*ring;
+    var pt={x:Math.sin(a)*rr,y:-Math.cos(a)*rr,rec:node,d:d};
     nodes.push(pt);
     if(l>0&&node.kids.length){
       var span=a1-a0,tot=leaves(node,l),acc=a0;
@@ -328,8 +338,7 @@ function radial(rec,levels){
       });
     }
     return pt;
-  })(rec,lv,0,Math.PI*2,0);
-
+  })(r0,lv,0,Math.PI*2,0);
   var pad=70,minX=0,maxX=0,minY=0,maxY=0;
   nodes.forEach(function(p){minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);minY=Math.min(minY,p.y);maxY=Math.max(maxY,p.y)});
   var W=Math.ceil(maxX-minX+pad*2),H=Math.ceil(maxY-minY+pad*2);
@@ -351,7 +360,7 @@ function radial(rec,levels){
     var c=document.createElementNS(NS,'circle');
     c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);
     c.setAttribute('r',p.d===0?9:(p.d<3?6:4));
-    c.setAttribute('fill',isSel?'#c67139':(p.d<3?'#7a8a5e':'#c0b6a5'));
+    c.setAttribute('fill',isSel?'#c67139':(hasNote(p.rec.path)?'#7a8a5e':(p.d<3?'#7a8a5e':'#c0b6a5')));
     g.appendChild(c);
     var t=document.createElementNS(NS,'text');
     t.setAttribute('x',p.x);t.setAttribute('y',p.y-(p.d===0?16:12));
@@ -363,16 +372,31 @@ function radial(rec,levels){
     g.appendChild(t);
     svg.appendChild(g);
   });
-  var box=el('div');box.appendChild(svg);
-  return box;
+  var box=el('div');box.appendChild(svg);return box;
 }
-
-// transform:scale أوثق من zoom على iOS؛ ومعه صندوق مقاس يحفظ التمرير
+function listRows(r,keep,out){
+  var isOpen=keep?true:!!open[r.path];
+  var row=el('div','lrow');
+  row.style.marginInlineStart=(r.depth*16)+'px';
+  var cx=el('span','cx'+(r.kids.length?'':' leaf'),r.kids.length?(isOpen?'−':'+'):'·');
+  if(r.kids.length)cx.onclick=function(ev){ev.stopPropagation();open[r.path]=!open[r.path];render()};
+  row.appendChild(cx);
+  var p=pillFor(r);
+  if(keep&&keep[r.path]==='hit')p.classList.add('hit');
+  row.appendChild(p);
+  if(r.kids.length)row.appendChild(el('span','muted',r.kids.length+' / '+r.total));
+  if(hasNote(r.path))row.appendChild(el('span','note-dot'));
+  out.appendChild(row);
+  if(r.kids.length&&isOpen)r.kids.forEach(function(k){
+    var c=byPath[r.path+' / '+k.name];
+    if(keep&&!keep[c.path])return;
+    listRows(c,keep,out);
+  });
+}
 function fit(sizer,inner){
   inner.style.transform='none';
   var w=inner.scrollWidth||inner.offsetWidth,h=inner.scrollHeight||inner.offsetHeight;
-  var avail=pane.clientWidth-4;
-  var availH=pane.clientHeight-4;
+  var avail=pane.clientWidth-4,availH=pane.clientHeight-4;
   var floor=window.innerWidth<700?.4:.55;
   var isSvg=!!inner.querySelector('svg');
   var s=(w&&avail)?Math.max(floor,Math.min(1,avail/w)):1;
@@ -383,20 +407,55 @@ function fit(sizer,inner){
   var p=pane.querySelector('.pill.sel');
   if(p){var r=p.getBoundingClientRect(),v=pane.getBoundingClientRect();
     pane.scrollLeft+=(r.left+r.width/2)-(v.left+v.width/2);
-    pane.scrollTop+=(r.top)-(v.top)-14;}
-  else{pane.scrollLeft=(pane.scrollWidth-pane.clientWidth)/2;pane.scrollTop=(pane.scrollHeight-pane.clientHeight)/2;}
+    pane.scrollTop+=r.top-v.top-14}
+  else{pane.scrollLeft=(pane.scrollWidth-pane.clientWidth)/2;pane.scrollTop=(pane.scrollHeight-pane.clientHeight)/2}
 }
+
+function renderAll(){
+  var box=$('allList');box.innerHTML='';var count=0;
+  Object.keys(A).forEach(function(p){
+    var a=A[p],items=[];
+    (a.comments||[]).forEach(function(c){items.push({t:c.note,by:c.by,at:c.at})});
+    (a.adds||[]).forEach(function(c){items.push({t:'اسم مقترح: '+(c.name||'')+(c.note?' — '+c.note:''),by:c.by,at:c.at})});
+    if(a.info&&Object.keys(a.info).length){
+      var bits=[];
+      if(a.info.birth)bits.push('ميلاد '+a.info.birth);
+      if(a.info.death)bits.push('وفاة '+a.info.death);
+      if(a.info.city)bits.push('السكن '+a.info.city);
+      if(bits.length)items.push({t:bits.join(' · '),by:'',at:''});
+    }
+    if(!items.length)return;
+    var g=el('div','cmt');
+    var head=el('div');head.style.cssText='display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap';
+    var link=el('button','small',(byPath[p]?byPath[p].name:p));
+    link.onclick=function(){sel=p;allOpen=false;cardOpen=true;render()};
+    head.appendChild(link);
+    head.appendChild(el('span','muted',p.replace(/ \/ /g,' ← ')));
+    g.appendChild(head);
+    items.forEach(function(it){
+      count++;
+      var pp=el('p',null,it.t);g.appendChild(pp);
+      if(it.by)g.appendChild(el('div','who',it.by+(it.at?' — '+String(it.at).slice(0,10):'')));
+    });
+    box.appendChild(g);
+  });
+  if(!count)box.appendChild(el('div','muted','لا توجد ملاحظات معتمدة بعد'));
+  $('allCount').textContent=count?count+' ملاحظة':'';
+}
+
 function render(){
-  var keep=matches(),rec=byPath[sel]||ROOT;
+  var keep=matches(),r=byPath[sel]||ROOT;
   pane.innerHTML='';
   $('bV').className=(view==='graph'&&mode==='v')?'on':'';
   $('bH').className=(view==='graph'&&mode==='h')?'on':'';
   $('bR').className=(view==='graph'&&mode==='r')?'on':'';
   $('bList').className=view==='list'?'on':'';
-  $('bCard').className=(cardOpen||view==='list')?'on':'';
-  $('depthBox').style.display=view==='graph'?'flex':'none';
+  $('bAll').className=allOpen?'on':'';
   var showCard=(view==='list')||cardOpen;
+  $('bCard').className=showCard?'on':'';
+  $('depthBox').style.display=view==='graph'?'flex':'none';
   $('card').style.display=showCard?'flex':'none';
+  $('allBox').style.display=allOpen?'flex':'none';
   $('grid').style.gridTemplateColumns=(!showCard||window.innerWidth<900)?'minmax(0,1fr)':'minmax(0,1.35fr) minmax(0,1fr)';
   pane.style.height=view==='graph'?(window.innerWidth<700?'calc(100vh - 260px)':'calc(100vh - 230px)'):'60vh';
   try{history.replaceState(null,'','#'+encodeURIComponent(sel))}catch(e){}
@@ -404,73 +463,124 @@ function render(){
   $('dLbl').textContent=depth>=99?'الكل':depth;
 
   if(view==='graph'&&!keep){
-    var sizer=el('div','sizer');
-    var inner=el('div','inner');
+    var sizer=el('div','sizer'),inner=el('div','inner');
     inner.style.cssText+='display:flex;justify-content:center;padding:6px 4px 14px';
-    inner.appendChild(mode==='v'?graph(rec,depth):(mode==='h'?graphH(rec,depth):radial(rec,depth)));
-    sizer.appendChild(inner);
-    pane.appendChild(sizer);
-    fit(sizer,inner);
+    inner.appendChild(mode==='v'?graph(r,depth):(mode==='h'?graphH(r,depth):radial(r,depth)));
+    sizer.appendChild(inner);pane.appendChild(sizer);fit(sizer,inner);
   }else{
     var box=el('div');box.style.cssText='display:flex;flex-direction:column;gap:3px';
-    listRows(ROOT,keep,box);
-    pane.appendChild(box);
+    listRows(ROOT,keep,box);pane.appendChild(box);
   }
-  $('cName').textContent=rec.name;
-  var chain=rec.chain.slice().reverse();
+
+  $('cName').textContent=r.name;
+  var chain=r.chain.slice().reverse();
   $('cChain').textContent=chain.length?'بن '+chain.join(' بن '):'الجدّ الأعلى للحمولة';
-  $('sonsBox').style.display=rec.kids.length?'flex':'none';
-  $('sonsLbl').textContent='الأبناء ('+rec.kids.length+')';
+  var a=rec_(sel),info=a.info||{};
+  var st=$('statBox');st.innerHTML='';
+  st.appendChild(el('span',null,'أبناء مباشرون: '+r.kids.length));
+  st.appendChild(el('span',null,'إجمالي الذرية: '+r.total));
+  st.appendChild(el('span',null,'الجيل '+(r.depth+1)));
+  if(info.birth)st.appendChild(el('span',null,'ميلاد '+info.birth));
+  if(info.death)st.appendChild(el('span',null,'وفاة '+info.death));
+  if(info.city)st.appendChild(el('span',null,info.city));
+  $('photoBox').style.display=info.photo?'block':'none';
+  if(info.photo)$('photo').src=info.photo;
+  $('sonsBox').style.display=r.kids.length?'flex':'none';
+  $('sonsLbl').textContent='الأبناء ('+r.kids.length+')';
   var sb=$('sons');sb.innerHTML='';
-  rec.kids.forEach(function(k){
+  r.kids.forEach(function(k){
     var c=el('button','chip',k.name);
-    c.onclick=function(){sel=rec.path+' / '+k.name;render()};
+    c.onclick=function(){sel=r.path+' / '+k.name;render()};
     sb.appendChild(c);
   });
-  $('note').value=(data[sel]&&data[sel].note)||'';
-  var sh=shared[sel];
-  $('sharedBox').style.display=sh&&sh.note?'flex':'none';
-  $('sharedNote').textContent=sh?sh.note:'';
-  $('sharedBy').textContent=sh?((sh.by?'أضافها '+sh.by:'')+(sh.at?' — '+String(sh.at).slice(0,10):'')):'';
-  $('sendMsg').textContent='';
+  var cb=$('cmts');cb.innerHTML='';
+  var list=(a.comments||[]).concat((a.adds||[]).map(function(x){return{note:'اسم مقترح: '+(x.name||'')+(x.note?' — '+x.note:''),by:x.by,at:x.at}}));
+  if(!list.length)cb.appendChild(el('div','muted','لا ملاحظات على هذا الشخص'));
+  list.forEach(function(c){
+    var d=el('div','cmt');
+    d.appendChild(el('p',null,c.note));
+    d.appendChild(el('div','who',(c.by||'')+(c.at?' — '+String(c.at).slice(0,10):'')));
+    cb.appendChild(d);
+  });
+  $('tC').className='small'+(formType==='comment'?' on':'');
+  $('tN').className='small'+(formType==='correction'?' on':'');
+  $('tI').className='small'+(formType==='info'?' on':'');
+  $('fName').style.display=formType==='correction'?'flex':'none';
+  $('fInfo').style.display=formType==='info'?'flex':'none';
+  if(allOpen)renderAll();
 }
 
 $('bV').onclick=function(){view='graph';mode='v';query='';$('q').value='';render()};
 $('bH').onclick=function(){view='graph';mode='h';query='';$('q').value='';render()};
 $('bR').onclick=function(){view='graph';mode='r';query='';$('q').value='';if(depth>4)depth=3;render()};
 $('bList').onclick=function(){view='list';render()};
-$('bCard').onclick=function(){cardOpen=!cardOpen;if(view==='list')cardOpen=true;render()};
-$('bLink').onclick=function(){
-  var url=location.origin+location.pathname+'#'+encodeURIComponent(sel);
-  var done=function(){$('sendMsg').textContent='تم نسخ الرابط';cardOpen=true;render();$('sendMsg').textContent='تم نسخ رابط '+(byPath[sel]||ROOT).name};
-  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(done,function(){prompt('انسخ الرابط',url)});
-  else prompt('انسخ الرابط',url);
-};
-$('q').oninput=function(e){query=e.target.value;render()};
+$('bCard').onclick=function(){cardOpen=!cardOpen;render()};
+$('bAll').onclick=function(){allOpen=!allOpen;render()};
+$('tC').onclick=function(){formType='comment';render()};
+$('tN').onclick=function(){formType='correction';render()};
+$('tI').onclick=function(){formType='info';render()};
 $('dUp').onclick=function(){depth=depth>=8?99:depth+1;render()};
 $('dDown').onclick=function(){depth=depth>=99?8:Math.max(1,depth-1);render()};
 $('bUp').onclick=function(){var p=sel.lastIndexOf(' / ');if(p!==-1)sel=sel.slice(0,p);depth=99;render()};
+$('q').oninput=function(e){query=e.target.value;render()};
+$('bLink').onclick=function(){
+  var url=location.origin+location.pathname+'#'+encodeURIComponent(sel);
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(function(){alert('تم نسخ رابط '+(byPath[sel]||ROOT).name)},function(){prompt('انسخ الرابط',url)});
+  else prompt('انسخ الرابط',url);
+};
 $('bSend').onclick=function(){
-  var note=$('note').value,by=$('by').value;
+  var by=$('by').value.trim();
+  if(!by){$('sendMsg').textContent='اكتب اسمك أولًا';return}
   try{localStorage.setItem('family-tree-by',by)}catch(e){}
-  if(note.trim())data[sel]={note:note};else delete data[sel];
-  save();
+  var payload={path:sel,by:by,type:formType,note:$('note').value};
+  if(formType==='correction')payload.name=$('iName').value;
+  if(formType==='info'){payload.birth=$('iBirth').value;payload.death=$('iDeath').value;payload.city=$('iCity').value;payload.photo=$('iPhoto').value}
+  if(!String(payload.note||'').trim()&&!payload.name&&!payload.birth&&!payload.death&&!payload.city&&!payload.photo){$('sendMsg').textContent='اكتب شيئًا قبل الإرسال';return}
   $('sendMsg').textContent='جارٍ الإرسال…';
-  fetch(HOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:sel,note:note,by:by})})
-    .then(function(r){
-      if(!r.ok)throw 0;
-      shared[sel]={note:note,by:by,at:new Date().toISOString()};
-      $('sendMsg').textContent='تم الإرسال — تظهر للجميع خلال دقيقة';
-      render();
-    })
-    .catch(function(){$('sendMsg').textContent='تعذّر الإرسال — حُفِظت محليًا فقط'});
+  fetch(HOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+   .then(function(res){if(!res.ok)throw 0;
+     $('sendMsg').textContent='تم الإرسال — سيظهر بعد الموافقة';
+     $('note').value='';$('iName').value='';$('iBirth').value='';$('iDeath').value='';$('iCity').value='';$('iPhoto').value='';
+   })
+   .catch(function(){$('sendMsg').textContent='تعذّر الإرسال — حاول مرة أخرى'});
+};
+function withCanvas(cb){
+  if(window.html2canvas)return cb();
+  var s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  s.onload=cb;s.onerror=function(){alert('تعذّر تحميل أداة التصوير — تأكد من الاتصال')};
+  document.head.appendChild(s);
+}
+function shot(cb){
+  withCanvas(function(){
+    var target=pane.querySelector('.inner')||pane.firstChild||pane;
+    html2canvas(target,{backgroundColor:'#f9f4ed',scale:2}).then(cb);
+  });
+}
+$('bImg').onclick=function(){
+  shot(function(c){
+    var a=document.createElement('a');a.href=c.toDataURL('image/png');
+    a.download='شجرة-'+(byPath[sel]||ROOT).name+'.png';a.click();
+  });
+};
+$('bPdf').onclick=function(){
+  shot(function(c){
+    var w=window.open('','_blank');
+    if(!w){alert('اسمح بالنوافذ المنبثقة للطباعة');return}
+    w.document.write('<html dir="rtl"><head><title>شجرة '+(byPath[sel]||ROOT).name+'</title><style>@page{size:landscape;margin:10mm}body{margin:0;font-family:sans-serif}img{width:100%}h3{font-family:sans-serif}</style></head><body><h3>حمولة الفاضل — فرع '+(byPath[sel]||ROOT).name+'</h3><img src="'+c.toDataURL('image/png')+'"><\/body><\/html>');
+    w.document.close();
+    setTimeout(function(){w.print()},600);
+  });
 };
 try{$('by').value=localStorage.getItem('family-tree-by')||''}catch(e){}
 window.addEventListener('resize',render);
 window.addEventListener('orientationchange',render);
 render();
-fetch(NOTES_URL+'?t='+Date.now()).then(function(r){return r.ok?r.json():null}).then(function(j){
-  if(j&&typeof j==='object'){shared=j;render()}
+fetch(DATA_URL+'?t='+Date.now()).then(function(res){return res.ok?res.json():null}).then(function(j){
+  if(!j)return;
+  if(j.approved)A=j.approved;
+  else{Object.keys(j).forEach(function(p){if(j[p]&&j[p].note)A[p]={comments:[{note:j[p].note,by:j[p].by,at:j[p].at}],info:{},adds:[]}})}
+  render();
 }).catch(function(){});
 </script>
 </body>
