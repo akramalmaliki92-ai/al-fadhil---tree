@@ -170,72 +170,29 @@
 </div>
 
 <script>
-var n=function(name){var kids=[].slice.call(arguments,1);return{name:name,kids:kids}};
-var TREE=n('فاضل',
- n('حسن',n('تركي',
-  n('كريبيل',n('صادق (صويدج)',
-   n('كزار',
-    n('صخي',
-     n('لازم',
-      n('هادي',n('مصطفى'),n('مرتضى'),n('عبد الرحمن')),
-      n('شاكر',n('حازم',n('حسن')),n('حيدر',n('سجاد')),n('حسام')),
-      n('رياض',n('احمد'),n('أسامة'),n('سجاد'),n('حسنين')),
-      n('علي',n('اكرم',n('يمان')),n('ذو الفقار',n('اسد')),n('أبو الحسن')),
-      n('حسين',n('لازم'),n('لبيب'))),
-     n('غانم',
-      n('عبدالحسين',n('زيد'),n('مصطفى',n('محمد')),n('عقيل'),n('يوسف')),
-      n('صخي',n('غانم',n('عبدالله')),n('محمد',n('زيد'))),
-      n('فاضل',n('خالد'),n('عمار')),
-      n('حميد',n('قائد'),n('كرار')),
-      n('طارق',n('ياسر'),n('هشام'),n('بلال')))),
-    n('عريبي',n('معتوق',n('حامد',n('علي'),n('حسنين'),n('كريم'),n('حيدر'),n('ايمن'),n('قيصر'))))),
-   n('جابر (يوبر)',n('مطير',n('خلف',n('سالم'),n('علي'),n('حسين'),n('احمد'),n('جاسم'),n('منتظر')))),
-   n('شبير',
-    n('علكم',
-     n('سلمان',n('عدنان'),n('داود'),n('قيس'),n('احمد'),n('سعد'),n('محمد')),
-     n('نصار',n('مالك'),n('عباس'),n('مازن'),n('ساجد')),
-     n('جبار',n('صباح'))),
-    n('صبر',
-     n('غالي',n('عباس')),
-     n('شمخي',n('فلاح'),n('عادل'),n('هاشم'),n('كاظم'),n('خالد')),
-     n('رمضان',n('تركي'),n('كاظم'),n('حسن'),n('محسن'))),
-    n('حسين')),
-   n('صويحي',n('عاشور',n('عباس'),n('علي'),n('حمزة')),n('عبد السيد')),
-   n('رستم'),
-   n('سالم',n('مهريج',n('حسين',n('ثابت',n('علي'),n('رعد'),n('كريم'),n('فاضل'),n('غانم'))))),
-   n('عبدالله'))),
-  n('فدعم',n('حاجم',
-   n('دهش',n('عويد',n('اسكند',n('محيل',n('حسين'),n('جاسم'),n('علي'),n('احمد'))))),
-   n('شليش',n('جاسم',n('بصيو',n('كاظم'),n('صادق'),n('جاسم')))),
-   n('مشحوت',n('حسن',n('عبود',n('وهاب'),n('مهدي'),n('صالح')))))))),
- n('حسين',n('فياض',
-  n('فوزان',n('دفار',n('فارس',n('عوفي'),n('كاظم')))),
-  n('موزان',
-   n('حمدان',n('حسن (دكسن)',n('علي'),n('عبد السيد'),n('مجيد'),n('محمد'))),
-   n('مبارك',n('سعيد'),n('حشيش',n('سلمان')),n('طهيوش')),
-   n('فرج',n('تومان')),
-   n('عطيه')))));
+var TREE_URL='./tree.json';
 
 var DATA_URL='https://raw.githubusercontent.com/akramalmaliki92-ai/al-fadhil---tree/main/data.json';
 var HOOK_URL='https://baytalqasid.app.n8n.cloud/webhook/family-tree-note';
 
-var index=[],byPath={};
-(function walk(node,parent,chain){
-  var path=parent?parent+' / '+node.name:node.name;
-  var rec={name:node.name,path:path,chain:chain,kids:node.kids||[],depth:chain.length};
-  index.push(rec);byPath[path]=rec;
-  rec.kids.forEach(function(k){walk(k,path,chain.concat(node.name))});
-})(TREE,'',[]);
-var ROOT=index[0];
-index.forEach(function(r){
-  var t=0;(function c(x){x.kids.forEach(function(k){t++;c(byPath[x.path+' / '+k.name])})})(r);
-  r.total=t;
-});
+var index=[],byPath={},ROOT=null;
+function build(TREE){
+  index=[];byPath={};
+  (function walk(node,parent,chain){
+    var path=parent?parent+' / '+node.name:node.name;
+    var rec={name:node.name,path:path,chain:chain,kids:node.kids||[],depth:chain.length};
+    index.push(rec);byPath[path]=rec;
+    rec.kids.forEach(function(k){walk(k,path,chain.concat(node.name))});
+  })(TREE,'',[]);
+  ROOT=index[0];
+  index.forEach(function(r){
+    var t=0;(function c(x){x.kids.forEach(function(k){t++;c(byPath[x.path+' / '+k.name])})})(r);
+    r.total=t;
+  });
+}
 
 var A={};                     // الملاحظات المعتمدة
-var view='graph',mode='v',sel=ROOT.path,depth=(window.innerWidth<700?2:3),open={},query='',cardOpen=false,allOpen=false,formType='comment';
-if(location.hash.length>1){try{var h=decodeURIComponent(location.hash.slice(1));if(byPath[h])sel=h}catch(e){}}
-index.forEach(function(r){if(r.depth<4&&r.kids.length)open[r.path]=1});
+var view='graph',mode='v',sel='',depth=(window.innerWidth<700?2:3),open={},query='',cardOpen=false,allOpen=false,formType='comment';
 
 var $=function(id){return document.getElementById(id)};
 var pane=$('pane');
@@ -572,15 +529,25 @@ $('bPdf').onclick=function(){
   });
 };
 try{$('by').value=localStorage.getItem('family-tree-by')||''}catch(e){}
-window.addEventListener('resize',render);
-window.addEventListener('orientationchange',render);
-render();
-fetch(DATA_URL+'?t='+Date.now()).then(function(res){return res.ok?res.json():null}).then(function(j){
+window.addEventListener('resize',function(){if(ROOT)render()});
+window.addEventListener('orientationchange',function(){if(ROOT)render()});
+
+fetch(TREE_URL+'?t='+Date.now()).then(function(r){return r.ok?r.json():null}).then(function(t){
+  if(!t||!t.name)throw 0;
+  build(t);
+  sel=ROOT.path;
+  if(location.hash.length>1){try{var h=decodeURIComponent(location.hash.slice(1));if(byPath[h])sel=h}catch(e){}}
+  index.forEach(function(r){if(r.depth<4&&r.kids.length)open[r.path]=1});
+  render();
+  return fetch(DATA_URL+'?t='+Date.now());
+}).then(function(res){return res&&res.ok?res.json():null}).then(function(j){
   if(!j)return;
   if(j.approved)A=j.approved;
   else{Object.keys(j).forEach(function(p){if(j[p]&&j[p].note)A[p]={comments:[{note:j[p].note,by:j[p].by,at:j[p].at}],info:{},adds:[]}})}
   render();
-}).catch(function(){});
+}).catch(function(){
+  pane.textContent='تعذّر تحميل بيانات الشجرة — حدّث الصفحة';
+});
 </script>
 </body>
 </html>
