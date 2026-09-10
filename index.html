@@ -86,8 +86,8 @@
       <button id="bH">أفقي</button>
       <button id="bR">دائري</button>
       <button id="bList">قائمة</button>
-      <button id="bExport">تصدير الملاحظات</button>
-      <label class="file">استيراد<input id="fImport" type="file" accept="application/json" hidden></label>
+      <button id="bCard">البطاقة</button>
+      <button id="bLink">نسخ الرابط</button>
     </div>
   </div>
 
@@ -116,18 +116,24 @@
         <div id="sons" class="chips"></div>
       </div>
       <div class="rule"></div>
-      <div style="display:flex;flex-direction:column;gap:7px">
-        <div class="lbl">ملاحظات</div>
-        <textarea id="note" rows="4" placeholder="اكتب ملاحظتك — تصحيح اسم، تاريخ، أو أي معلومة."></textarea>
+      <div id="sharedBox" style="display:none;flex-direction:column;gap:6px;background:#f9f4ed;border:2px solid #dcd3c4;border-radius:18px;padding:12px 14px">
+        <div class="lbl" style="color:#3d472b">ملاحظة العائلة</div>
+        <div id="sharedNote" style="font-size:15px;line-height:1.8"></div>
+        <div id="sharedBy" class="muted" style="font-weight:400"></div>
       </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-        <span class="muted" style="font-weight:400">تُحفظ في هذا الجهاز</span>
-        <button id="bClear">مسح ملاحظة هذا الشخص</button>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <div class="lbl">أضف ملاحظة تظهر لكل العائلة</div>
+        <textarea id="note" rows="3" placeholder="تصحيح اسم، إضافة ابن، تاريخ، أو أي معلومة."></textarea>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input id="by" type="search" placeholder="اسمك" style="flex:1 1 130px">
+          <button id="bSend">إرسال</button>
+        </div>
+        <span id="sendMsg" class="muted" style="font-weight:400"></span>
       </div>
     </div>
   </div>
 
-  <p class="foot">الملاحظات تُحفظ في متصفح كل شخص. لتجميعها: يضغط كل واحد «تصدير الملاحظات» ويرسل الملف، ثم يُدمج عبر «استيراد».</p>
+  <p class="foot">الملاحظات تُحفظ لكل العائلة وتظهر عند الجميع بعد دقيقة من الإرسال. زر «نسخ الرابط» ينسخ رابطًا يفتح الشجرة على الشخص المختار مباشرة.</p>
 </div>
 
 <script>
@@ -178,6 +184,8 @@ var TREE=n('فاضل',
    n('عطيه')))));
 
 var KEY='family-tree-fadhil-v1';
+var NOTES_URL='https://raw.githubusercontent.com/akramalmaliki92-ai/al-fadhil---tree/main/notes.json';
+var HOOK_URL='https://baytalqasid.app.n8n.cloud/webhook/family-tree-note';
 var index=[],byPath={};
 (function walk(node,parent,chain){
   var path=parent?parent+' / '+node.name:node.name;
@@ -188,13 +196,18 @@ var index=[],byPath={};
 var ROOT=index[0];
 
 var data={};try{data=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){data={}}
-var view='graph',mode='v',sel=ROOT.path,depth=(window.innerWidth<700?2:3),open={},query='';
+var shared={};
+var view='graph',mode='v',sel=ROOT.path,depth=(window.innerWidth<700?2:3),open={},query='',cardOpen=false;
+if(location.hash.length>1){
+  try{var h=decodeURIComponent(location.hash.slice(1));if(byPath[h])sel=h;}catch(e){}
+}
 index.forEach(function(r){if(r.depth<4&&r.kids.length)open[r.path]=1});
 
 var $=function(id){return document.getElementById(id)};
 var pane=$('pane');
 
 function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
+function noteOf(p){return (shared[p]&&shared[p].note)||(data[p]&&data[p].note)||''}
 function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
 function matches(){
   if(!query.trim())return null;
@@ -206,7 +219,7 @@ function matches(){
   return keep;
 }
 function pillFor(rec){
-  var p=el('div','pill'+(rec.depth<4?' top':'')+(sel===rec.path?' sel':'')+(data[rec.path]&&data[rec.path].note?' noted':''),rec.name);
+  var p=el('div','pill'+(rec.depth<4?' top':'')+(sel===rec.path?' sel':'')+(noteOf(rec.path)?' noted':''),rec.name);
   p.onclick=function(){sel=rec.path;depth=99;render()};
   return p;
 }
@@ -251,7 +264,7 @@ function listRows(rec,keep,out){
   if(keep&&keep[rec.path]==='hit')p.classList.add('hit');
   row.appendChild(p);
   if(rec.kids.length)row.appendChild(el('span','muted',String(rec.kids.length)));
-  if(data[rec.path]&&data[rec.path].note)row.appendChild(el('span','note-dot'));
+  if(noteOf(rec.path))row.appendChild(el('span','note-dot'));
   out.appendChild(row);
   if(rec.kids.length&&isOpen)rec.kids.forEach(function(k){
     var c=byPath[rec.path+' / '+k.name];
@@ -380,10 +393,13 @@ function render(){
   $('bH').className=(view==='graph'&&mode==='h')?'on':'';
   $('bR').className=(view==='graph'&&mode==='r')?'on':'';
   $('bList').className=view==='list'?'on':'';
+  $('bCard').className=(cardOpen||view==='list')?'on':'';
   $('depthBox').style.display=view==='graph'?'flex':'none';
-  $('card').style.display=view==='graph'?'none':'flex';
-  $('grid').style.gridTemplateColumns=(view==='graph'||window.innerWidth<900)?'minmax(0,1fr)':'minmax(0,1.35fr) minmax(0,1fr)';
+  var showCard=(view==='list')||cardOpen;
+  $('card').style.display=showCard?'flex':'none';
+  $('grid').style.gridTemplateColumns=(!showCard||window.innerWidth<900)?'minmax(0,1fr)':'minmax(0,1.35fr) minmax(0,1fr)';
   pane.style.height=view==='graph'?(window.innerWidth<700?'calc(100vh - 260px)':'calc(100vh - 230px)'):'60vh';
+  try{history.replaceState(null,'','#'+encodeURIComponent(sel))}catch(e){}
   $('count').textContent=keep?(Object.keys(keep).filter(function(p){return keep[p]==='hit'}).length+' نتيجة'):(index.length+' اسمًا');
   $('dLbl').textContent=depth>=99?'الكل':depth;
 
@@ -412,42 +428,50 @@ function render(){
     sb.appendChild(c);
   });
   $('note').value=(data[sel]&&data[sel].note)||'';
+  var sh=shared[sel];
+  $('sharedBox').style.display=sh&&sh.note?'flex':'none';
+  $('sharedNote').textContent=sh?sh.note:'';
+  $('sharedBy').textContent=sh?((sh.by?'أضافها '+sh.by:'')+(sh.at?' — '+String(sh.at).slice(0,10):'')):'';
+  $('sendMsg').textContent='';
 }
 
 $('bV').onclick=function(){view='graph';mode='v';query='';$('q').value='';render()};
 $('bH').onclick=function(){view='graph';mode='h';query='';$('q').value='';render()};
 $('bR').onclick=function(){view='graph';mode='r';query='';$('q').value='';if(depth>4)depth=3;render()};
 $('bList').onclick=function(){view='list';render()};
+$('bCard').onclick=function(){cardOpen=!cardOpen;if(view==='list')cardOpen=true;render()};
+$('bLink').onclick=function(){
+  var url=location.origin+location.pathname+'#'+encodeURIComponent(sel);
+  var done=function(){$('sendMsg').textContent='تم نسخ الرابط';cardOpen=true;render();$('sendMsg').textContent='تم نسخ رابط '+(byPath[sel]||ROOT).name};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(done,function(){prompt('انسخ الرابط',url)});
+  else prompt('انسخ الرابط',url);
+};
 $('q').oninput=function(e){query=e.target.value;render()};
 $('dUp').onclick=function(){depth=depth>=8?99:depth+1;render()};
 $('dDown').onclick=function(){depth=depth>=99?8:Math.max(1,depth-1);render()};
 $('bUp').onclick=function(){var p=sel.lastIndexOf(' / ');if(p!==-1)sel=sel.slice(0,p);depth=99;render()};
-$('note').oninput=function(e){
-  var v=e.target.value;
-  if(v.trim())data[sel]={note:v};else delete data[sel];
+$('bSend').onclick=function(){
+  var note=$('note').value,by=$('by').value;
+  try{localStorage.setItem('family-tree-by',by)}catch(e){}
+  if(note.trim())data[sel]={note:note};else delete data[sel];
   save();
+  $('sendMsg').textContent='جارٍ الإرسال…';
+  fetch(HOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:sel,note:note,by:by})})
+    .then(function(r){
+      if(!r.ok)throw 0;
+      shared[sel]={note:note,by:by,at:new Date().toISOString()};
+      $('sendMsg').textContent='تم الإرسال — تظهر للجميع خلال دقيقة';
+      render();
+    })
+    .catch(function(){$('sendMsg').textContent='تعذّر الإرسال — حُفِظت محليًا فقط'});
 };
-$('bClear').onclick=function(){delete data[sel];save();render()};
-$('bExport').onclick=function(){
-  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='ملاحظات-شجرة-الفاضل.json';a.click();
-  setTimeout(function(){URL.revokeObjectURL(a.href)},2000);
-};
-$('fImport').onchange=function(e){
-  var f=e.target.files&&e.target.files[0];if(!f)return;
-  var fr=new FileReader();
-  fr.onload=function(){
-    try{var inc=JSON.parse(fr.result);
-      Object.keys(inc).forEach(function(p){data[p]=inc[p]});
-      save();render();
-    }catch(err){alert('تعذّر قراءة الملف')}
-  };
-  fr.readAsText(f);e.target.value='';
-};
+try{$('by').value=localStorage.getItem('family-tree-by')||''}catch(e){}
 window.addEventListener('resize',render);
 window.addEventListener('orientationchange',render);
 render();
+fetch(NOTES_URL+'?t='+Date.now()).then(function(r){return r.ok?r.json():null}).then(function(j){
+  if(j&&typeof j==='object'){shared=j;render()}
+}).catch(function(){});
 </script>
 </body>
 </html>
