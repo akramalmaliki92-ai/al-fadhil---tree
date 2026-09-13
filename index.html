@@ -69,13 +69,27 @@
   .all{display:none;flex-direction:column;gap:12px;border-radius:24px;background:#ebddc5;border:2px solid #dcd3c4;padding:20px 18px}
   .form{display:flex;flex-direction:column;gap:8px}
   .tabs{display:flex;gap:6px;flex-wrap:wrap}
+  .mbar{display:none;gap:8px;flex-wrap:wrap}
+  .crumbs{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .crumb{padding:6px 13px;border-radius:999px;border:2px solid #dcd3c4;background:#ebddc5;color:#474238;font-size:14px;font-weight:800;cursor:pointer;font-family:'Almarai'}
+  .mhead{border-radius:22px;background:#ebddc5;border:2px solid #dcd3c4;padding:16px 16px 14px;display:flex;flex-direction:column;gap:10px}
+  .mhead h2{margin:0;font-family:'Rakkas',serif;font-weight:400;font-size:30px;line-height:1.1}
+  .mrow{display:flex;align-items:center;gap:10px;width:100%;text-align:right;padding:14px 16px;border-radius:18px;border:2px solid #ffe1d0;background:#fff2eb;color:#8c491a;font-family:'Almarai';font-size:17px;font-weight:800;cursor:pointer;min-height:56px}
+  .mrow .kidn{margin-inline-start:auto;font-size:13px;font-weight:800;color:#645c50;white-space:nowrap}
+  .mrow .arw{font-size:19px;color:#c0b6a5;line-height:1}
+  .mrow.leaf{background:#f9f4ed;border-color:#dcd3c4;color:#474238;cursor:default}
+  .mlist{display:flex;flex-direction:column;gap:8px}
   @media(max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
   @media(max-width:700px){
+    .wrap{padding:14px 12px 32px;gap:12px}
     .bar{position:static}
+    h1{font-size:30px}
+    .mbar{display:flex}
     .btns{width:100%}
     .btns button{flex:1 1 auto}
     input[type=search]{flex:1 1 100%}
     .pill{font-size:16px;padding:8px 15px}
+    .pane{padding:10px 8px;border-radius:20px}
   }
 </style>
 </head>
@@ -86,7 +100,12 @@
       <div class="kicker"><span class="dot"></span><span>قبيلة بني مالك ← آل إبراهيم</span></div>
       <h1>عشائر الحمودي</h1>
     </div>
-    <div class="btns">
+    <div class="mbar" id="mbar">
+      <button id="bMob">تنقّل</button>
+      <button id="bCardM">البطاقة</button>
+      <button id="bMore">طرق العرض</button>
+    </div>
+    <div class="btns" id="btns">
       <button id="bV" class="on">شجرة عمودية</button>
       <button id="bH">أفقي</button>
       <button id="bR">دائري</button>
@@ -121,6 +140,17 @@
 
   <div id="grid" class="grid">
     <div id="pane" class="pane"></div>
+    <div id="mobBox" style="display:none;flex-direction:column;gap:12px">
+      <div id="crumbs" class="crumbs"></div>
+      <div class="mhead">
+        <div class="lbl" style="color:#8c491a;font-size:12px" id="mKick"></div>
+        <h2 id="mName"></h2>
+        <div id="mChain" class="chain"></div>
+        <div id="mStat" class="stat"></div>
+      </div>
+      <div class="lbl" id="mSonsLbl"></div>
+      <div id="mSons" class="mlist"></div>
+    </div>
     <div id="card" class="card" style="display:none">
       <div>
         <div class="lbl" style="color:#8c491a;font-size:12px">البطاقة</div>
@@ -210,7 +240,8 @@ function build(TREE){
 }
 
 var A={};                     // الملاحظات المعتمدة
-var view='graph',mode='v',sel='',depth=(window.innerWidth<700?2:3),open={},query='',cardOpen=false,allOpen=false,formType='comment';
+var isPhone=function(){return window.innerWidth<700};
+var view=isPhone()?'mob':'graph',mode='v',sel='',depth=(isPhone()?2:3),open={},query='',cardOpen=false,allOpen=false,formType='comment',moreOpen=false;
 
 var $=function(id){return document.getElementById(id)};
 var pane=$('pane');
@@ -417,9 +448,68 @@ function renderAll(){
   $('allCount').textContent=count?count+' ملاحظة':'';
 }
 
+function renderMob(r,keep){
+  var cb=$('crumbs');cb.innerHTML='';
+  var parts=r.path.split(' / '),acc='';
+  parts.forEach(function(nm,i){
+    acc=acc?acc+' / '+nm:nm;
+    var p=acc;
+    if(i===parts.length-1)return;
+    var c=el('button','crumb',nm);
+    c.onclick=function(){sel=p;render()};
+    cb.appendChild(c);
+    cb.appendChild(el('span','muted','←'));
+  });
+  if(parts.length>1){
+    var up=el('button','crumb','للأعلى ↑');
+    up.style.marginInlineStart='auto';
+    up.onclick=function(){sel=parts.slice(0,-1).join(' / ');render()};
+    cb.appendChild(up);
+  }
+  $('mKick').textContent=hasNote(r.path)?'عليه ملاحظات':'الجيل '+(r.depth+1);
+  $('mName').textContent=r.name;
+  var chain=r.chain.slice().reverse();
+  $('mChain').textContent=chain.length?'بن '+chain.join(' بن '):'الجذع الأعلى';
+  var st=$('mStat');st.innerHTML='';
+  st.appendChild(el('span',null,'أبناء '+r.kids.length));
+  st.appendChild(el('span',null,'الذرية '+r.total));
+  var rows=$('mSons');rows.innerHTML='';
+  if(keep){
+    var hits=index.filter(function(x){return keep[x.path]==='hit'});
+    $('mSonsLbl').textContent=hits.length?('نتائج البحث ('+hits.length+')'):'لا نتائج';
+    hits.slice(0,60).forEach(function(c){
+      var b=el('button','mrow');
+      b.appendChild(el('span',null,c.name));
+      b.appendChild(el('span','kidn',c.chain.slice().reverse().slice(0,2).join(' بن ')));
+      b.onclick=function(){query='';$('q').value='';sel=c.path;render();window.scrollTo(0,0)};
+      rows.appendChild(b);
+    });
+    return;
+  }
+  var kids=r.kids.map(function(k){return byPath[r.path+' / '+k.name]});
+  $('mSonsLbl').textContent=kids.length?('الأبناء ('+kids.length+') — اضغط للدخول'):'لا أبناء مدرجون — افتح «البطاقة» لإضافة ابن';
+  kids.forEach(function(c){
+    var b=el('button','mrow'+(c.kids.length?'':' leaf'));
+    b.appendChild(el('span',null,c.name));
+    if(hasNote(c.path))b.appendChild(el('span','note-dot'));
+    if(c.kids.length){
+      b.appendChild(el('span','kidn',c.kids.length+' / '+c.total));
+      b.appendChild(el('span','arw','‹'));
+    }
+    b.onclick=function(){sel=c.path;if(c.kids.length){render();window.scrollTo(0,0)}else{cardOpen=true;render()}};
+    rows.appendChild(b);
+  });
+}
+
 function render(){
   var keep=matches(),r=byPath[sel]||ROOT;
   pane.innerHTML='';
+  var phone=isPhone();
+  $('btns').style.display=(!phone||moreOpen)?'flex':'none';
+  $('bMore').className=moreOpen?'on':'';
+  $('bMob').className=view==='mob'?'on':'';
+  $('mobBox').style.display=view==='mob'?'flex':'none';
+  $('pane').style.display=view==='mob'?'none':'block';
   $('bV').className=(view==='graph'&&mode==='v')?'on':'';
   $('bH').className=(view==='graph'&&mode==='h')?'on':'';
   $('bR').className=(view==='graph'&&mode==='r')?'on':'';
@@ -427,6 +517,7 @@ function render(){
   $('bAll').className=allOpen?'on':'';
   var showCard=(view==='list')||cardOpen;
   $('bCard').className=showCard?'on':'';
+  $('bCardM').className=showCard?'on':'';
   $('depthBox').style.display=view==='graph'?'flex':'none';
   $('card').style.display=showCard?'flex':'none';
   $('allBox').style.display=allOpen?'flex':'none';
@@ -436,7 +527,9 @@ function render(){
   $('count').textContent=keep?(Object.keys(keep).filter(function(p){return keep[p]==='hit'}).length+' نتيجة'):(index.length+' اسمًا');
   $('dLbl').textContent=depth>=99?'الكل':depth;
 
-  if(view==='graph'&&!keep){
+  if(view==='mob'){
+    renderMob(r,keep);
+  }else if(view==='graph'&&!keep){
     var sizer=el('div','sizer'),inner=el('div','inner');
     inner.style.cssText+='display:flex;justify-content:center;padding:6px 4px 14px';
     inner.appendChild(mode==='v'?graph(r,depth):(mode==='h'?graphH(r,depth):radial(r,depth)));
@@ -513,6 +606,9 @@ function render(){
   if(allOpen)renderAll();
 }
 
+$('bMob').onclick=function(){view='mob';moreOpen=false;render();window.scrollTo(0,0)};
+$('bMore').onclick=function(){moreOpen=!moreOpen;render()};
+$('bCardM').onclick=function(){cardOpen=!cardOpen;render()};
 $('bV').onclick=function(){view='graph';mode='v';query='';$('q').value='';render()};
 $('bH').onclick=function(){view='graph';mode='h';query='';$('q').value='';render()};
 $('bR').onclick=function(){view='graph';mode='r';query='';$('q').value='';if(depth>4)depth=3;render()};
