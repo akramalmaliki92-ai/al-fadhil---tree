@@ -73,7 +73,7 @@ var PHONE_RE=/[0-9\u0660-\u0669+][0-9\u0660-\u0669+\s-]{6,}/g;
 
 var app=document.getElementById('app');
 var ROOT=null,index=[],byPath={},A={};
-var sel='',query='',form=null,sent=false,kids=[{name:'',kids:[]}];
+var sel='',query='',form=null,sent=false,kids=[{name:'',kids:[]}],phoneEdit=false;
 
 function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
 function btn(cls,txt,fn,sub){var b=el('button','btn '+(cls||''));b.type='button';b.appendChild(el('span',null,txt));if(sub!=null)b.appendChild(el('small',null,sub));b.onclick=fn;return b}
@@ -276,10 +276,22 @@ function drawForm(box,r){
   var me=el('div','box white');me.style.marginTop='6px';
   var saved={};try{saved={by:localStorage.getItem('family-tree-by')||'',ph:localStorage.getItem('family-tree-phone')||''}}catch(e){}
   var fb=field(me,'اسمك الثلاثي','fBy','مثال: اكرم علي لازم','text',saved.by);
-  var fp=field(me,'رقم هاتفك','fPhone','07xxxxxxxxx','tel',saved.ph);
   fb.oninput=function(){try{localStorage.setItem('family-tree-by',fb.value)}catch(e){}};
-  fp.oninput=function(){try{localStorage.setItem('family-tree-phone',fp.value)}catch(e){}};
-  me.appendChild(el('div','muted','رقمك لا يظهر لأحد. نستخدمه فقط للتواصل معك والتأكد.'));
+  var known=String(saved.ph||'').replace(/\D/g,'').length>=8&&!phoneEdit;
+  if(known){
+    var hp=document.createElement('input');hp.type='hidden';hp.id='fPhone';hp.value=saved.ph;me.appendChild(hp);
+    var pr=el('div');pr.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:8px';
+    pr.appendChild(el('span',null,'رقمك محفوظ: '));
+    var shown=el('b',null,saved.ph);shown.dir='ltr';pr.appendChild(shown);
+    var ch=el('button','link','تغيير');ch.type='button';ch.onclick=function(){phoneEdit=true;render()};
+    pr.appendChild(ch);
+    me.appendChild(pr);
+    me.appendChild(el('div','muted','لا حاجة لكتابته مرة أخرى على هذا الجهاز.'));
+  }else{
+    var fp=field(me,'رقم هاتفك','fPhone','07xxxxxxxxx','tel',saved.ph);
+    fp.oninput=function(){try{localStorage.setItem('family-tree-phone',fp.value)}catch(e){}};
+    me.appendChild(el('div','muted','رقمك لا يظهر لأحد. نستخدمه فقط للتواصل معك والتأكد، ويُحفظ على جهازك فلا تكتبه مرة أخرى.'));
+  }
   box.appendChild(me);
 
   var msg=el('div','err');box.appendChild(msg);
