@@ -74,6 +74,12 @@ var PHONE_RE=/[0-9\u0660-\u0669+][0-9\u0660-\u0669+\s-]{6,}/g;
 var app=document.getElementById('app');
 var ROOT=null,index=[],byPath={},A={};
 var sel='',query='',form=null,sent=false,kids=[{name:'',kids:[]}],phoneEdit=false;
+var TG_URL='https://baytalqasid.app.n8n.cloud/webhook/family-tree-telegram';
+var svc=null,svcSent=false,svcKind='',svcUntil='',PUB={events:[],alerts:[]},geo=null;
+function loadPub(){fetch(TG_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'public'})}).then(function(r){return r.json()}).then(function(j){if(j&&j.ok){PUB=j;if(!form&&!svc&&(byPath[sel]||ROOT)===ROOT)render()}}).catch(function(){})}
+function openSvc(k){svc=k;svcSent=false;svcKind='';svcUntil='';geo=null;try{history.pushState(null,'','#svc-'+k)}catch(e){}render();window.scrollTo(0,0)}
+function fmtDate(d){try{var x=new Date(d+'T12:00:00');return x.toLocaleDateString('ar-IQ',{weekday:'long',day:'numeric',month:'long'})}catch(e){return d}}
+function ago(t){var m=Math.round((Date.now()-new Date(t).getTime())/60000);if(m<60)return 'قبل '+Math.max(1,m)+' دقيقة';var h=Math.round(m/60);return h<24?'قبل '+h+' ساعة':'قبل '+Math.round(h/24)+' يوم'}
 
 function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
 function btn(cls,txt,fn,sub){var b=el('button','btn '+(cls||''));b.type='button';b.appendChild(el('span',null,txt));if(sub!=null)b.appendChild(el('small',null,sub));b.onclick=fn;return b}
@@ -108,11 +114,12 @@ function search(q){
 }
 
 function go(path){sel=path;form=null;sent=false;kids=[{name:'',kids:[]}];try{history.pushState(null,'','#'+encodeURIComponent(path))}catch(e){}render();window.scrollTo(0,0)}
-window.addEventListener('popstate',function(){var h='';try{h=decodeURIComponent(location.hash.slice(1))}catch(e){}sel=byPath[h]?h:ROOT.path;form=null;sent=false;render()});
+window.addEventListener('popstate',function(){var h='';try{h=decodeURIComponent(location.hash.slice(1))}catch(e){}svc=/^svc-(sos|here)$/.test(h)?h.slice(4):null;sel=byPath[h]?h:ROOT.path;form=null;sent=false;render()});
 
 function render(){
   app.innerHTML='';
   var r=byPath[sel]||ROOT;
+  if(svc){svcPage();var f0=el('div','foot');f0.appendChild(el('div','muted','إعداد الشجرة: علي لازم صخي'));app.appendChild(f0);return}
   if(r===ROOT)home();else person(r);
   var f=el('div','foot');
   var full=el('a',null,'عرض الشجرة كاملة (للحاسوب)');full.href='full.html#'+encodeURIComponent(r.path);
@@ -126,6 +133,16 @@ function home(){
   head.appendChild(el('div','muted','قبيلة بني مالك — آل إبراهيم'));
   head.appendChild(el('h1','big','شجرة عشائر الحمودي'));
   app.appendChild(head);
+
+  (PUB.alerts||[]).filter(function(a){return a.type==='sos'}).forEach(function(a){
+    var al=el('div','box');al.style.cssText='background:#8c491a;border-color:#6f3712;color:#fff2eb;gap:6px';
+    al.appendChild(el('div',null,'طلب مساعدة عاجل — '+ago(a.at)));
+    var t=el('h2',null,a.name);t.style.color='#fff2eb';al.appendChild(t);
+    al.appendChild(el('div',null,(a.kind||'')+(a.city?' — '+a.city:'')+(a.note?' — '+a.note:'')));
+    al.appendChild(el('div',null,'التفاصيل ورقم الهاتف في مجموعة «ديوان الحمودي» على تلقرام.'));
+    if(a.map){var m=el('a','chip','فتح الموقع على الخريطة');m.href=a.map;m.target='_blank';m.rel='noopener';m.style.alignSelf='flex-start';al.appendChild(m)}
+    app.appendChild(al);
+  });
 
   var sb=el('div','box white');
   sb.appendChild(el('label',null,'ابحث عن اسمك'));
@@ -149,7 +166,94 @@ function home(){
   kidsOf(ROOT).forEach(function(c){l.appendChild(btn('',c.name,function(){go(c.path)},c.total?c.total+' اسمًا':'لم تُكتمل بعد'))});
   hb.appendChild(l);
   app.appendChild(hb);
+
+  var sv=el('div','box');
+  sv.appendChild(el('label',null,'خدمات العشيرة'));
+  var sos=btn('main center','أحتاج مساعدة عاجلة',function(){openSvc('sos')});sos.style.background='#8c491a';sos.style.borderColor='#6f3712';
+  sv.appendChild(sos);
+  sv.appendChild(btn('sage center','أنا في مدينتكم',function(){openSvc('here')}));
+  sv.appendChild(el('div','muted','تصل رسالتك فورًا إلى أعضاء مجموعة «ديوان الحمودي».'));
+  var here=(PUB.alerts||[]).filter(function(a){return a.type==='here'});
+  if(here.length){
+    sv.appendChild(el('label',null,'من أبناء العشيرة مسافر الآن'));
+    here.forEach(function(a){var n=el('div','note');n.appendChild(el('p',null,a.name+' — في '+(a.city||'—')+(a.until?' ('+a.until+')':'')));n.appendChild(el('div','who',ago(a.at)));sv.appendChild(n)});
+  }
+  app.insertBefore(sv,hb);
+
+  if((PUB.events||[]).length){
+    var eb=el('div','box white');
+    eb.appendChild(el('label',null,'المناسبات القادمة'));
+    PUB.events.forEach(function(e){var n=el('div','note');var p=el('p',null,e.title);p.style.fontWeight='800';n.appendChild(p);n.appendChild(el('div',null,fmtDate(e.date)+(e.yearly?' — سنويًا':'')));if(e.note)n.appendChild(el('div','muted',e.note));eb.appendChild(n)});
+    app.appendChild(eb);
+  }
 }
+
+function svcPage(){
+  var top=el('div','top');
+  top.appendChild(btn('plain','→ الصفحة الرئيسية',function(){svc=null;try{history.pushState(null,'','#')}catch(e){}render()}));
+  app.appendChild(top);
+  var box=el('div','box white');
+  var isSos=svc==='sos';
+  box.appendChild(el('h1',null,isSos?'طلب مساعدة عاجلة':'أنا في مدينتكم'));
+  if(svcSent){
+    box.appendChild(el('div','ok',isSos?'✓ وصل طلبك إلى المجموعة. سيتصل بك أحد الأقارب إن شاء الله. ابقَ قريبًا من هاتفك.':'✓ أُبلغ أبناء العشيرة بوجودك. رحلة موفقة.'));
+    app.appendChild(box);return;
+  }
+  box.appendChild(el('div','muted',isSos?'تصل رسالتك فورًا إلى مجموعة «ديوان الحمودي» مع رقمك وموقعك، ليتصل بك أقرب الأقارب. في الحالات الخطرة اتصل بالإسعاف أولًا.':'إذا كنت مسافرًا أو زائرًا لمدينة، أخبر أقاربك هناك ليتواصلوا معك.'));
+  if(isSos){
+    box.appendChild(el('label',null,'ما نوع الحاجة؟'));
+    var kl=el('div','list');
+    ['حالة مرضية','حادث أو عطل سيارة','حاجة أخرى'].forEach(function(k){var b=btn(svcKind===k?'main center':'plain center',k,function(){svcKind=k;keepRender()});kl.appendChild(b)});
+    box.appendChild(kl);
+  }else{
+    field(box,'المدينة التي أنت فيها','sCity','مثال: بغداد، الكاظمية');
+    box.appendChild(el('label',null,'مدة البقاء'));
+    var ul=el('div','list');
+    ['اليوم فقط','يومين أو ثلاثة','أسبوع أو أكثر'].forEach(function(k){ul.appendChild(btn(svcUntil===k?'main center':'plain center',k,function(){svcUntil=k;keepRender()}))});
+    box.appendChild(ul);
+  }
+  field(box,isSos?'تفاصيل (اختياري)':'ملاحظة (اختياري)','sNote',isSos?'مثال: في مستشفى الصدر وأحتاج من يرافقني':'مثال: لزيارة، أو للعمل','area');
+  if(isSos)field(box,'المكان (إن لم ترسل موقعك)','sCity','مثال: البصرة، طريق الزبير');
+  var gb=btn(geo?'sage center':'plain center',geo?'✓ تم تحديد موقعك':'أرسِل موقعي على الخريطة'+(isSos?' (مستحسن)':''),function(){
+    if(!navigator.geolocation){gm.textContent='هاتفك لا يدعم تحديد الموقع — اكتب المكان بدلًا منه';return}
+    gm.textContent='جارٍ تحديد موقعك… اضغط «السماح» إن ظهر لك سؤال';
+    var keep={c:v('sCity'),n:v('sNote')};
+    navigator.geolocation.getCurrentPosition(function(p){geo={lat:p.coords.latitude,lng:p.coords.longitude};render();var a=document.getElementById('sCity'),b=document.getElementById('sNote');if(a&&keep.c)a.value=keep.c;if(b&&keep.n)b.value=keep.n},function(){gm.textContent='لم نستطع تحديد موقعك — اكتب المكان بالكتابة'},{enableHighAccuracy:true,timeout:15000});
+  });
+  box.appendChild(gb);
+  var gm=el('div','muted');box.appendChild(gm);
+
+  var me=el('div','box');
+  var saved={};try{saved={by:localStorage.getItem('family-tree-by')||'',ph:localStorage.getItem('family-tree-phone')||''}}catch(e){}
+  var fb=field(me,'اسمك','sBy','مثال: اكرم علي لازم','text',saved.by);
+  var fp=field(me,'رقم هاتفك','sPhone','07xxxxxxxxx','tel',saved.ph);
+  fb.oninput=function(){try{localStorage.setItem('family-tree-by',fb.value)}catch(e){}};
+  fp.oninput=function(){try{localStorage.setItem('family-tree-phone',fp.value)}catch(e){}};
+  me.appendChild(el('div','muted','هذه الخدمة لأعضاء المجموعة الموثّقين. سيظهر رقمك لأعضاء المجموعة ليتصلوا بك.'));
+  box.appendChild(me);
+  var msg=el('div','err');box.appendChild(msg);
+  var send=btn('main',isSos?'أرسِل طلب المساعدة':'أرسِل',function(){
+    var by=v('sBy'),ph=v('sPhone');
+    if(!by){msg.textContent='اكتب اسمك';return}
+    if(ph.replace(/\D/g,'').length<8){msg.textContent='اكتب رقم هاتفك';return}
+    if(isSos&&!svcKind){msg.textContent='اختر نوع الحاجة';return}
+    if(!isSos&&!v('sCity')&&!geo){msg.textContent='اكتب اسم المدينة';return}
+    if(isSos&&!confirm('إرسال طلب مساعدة عاجل إلى كل أعضاء المجموعة؟'))return;
+    msg.textContent='';send.disabled=true;send.firstChild.textContent='جارٍ الإرسال…';
+    var body={action:svc,name:by,phone:ph,kind:svcKind,until:svcUntil,city:v('sCity'),note:v('sNote')};
+    if(geo){body.lat=geo.lat;body.lng=geo.lng}
+    fetch(TG_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json()}).then(function(j){
+      if(j&&j.ok){svcSent=true;render();loadPub();return}
+      send.disabled=false;send.firstChild.textContent=isSos?'أرسِل طلب المساعدة':'أرسِل';
+      var r=j&&j.reason;
+      msg.textContent=r==='not_verified'?'رقمك غير موثّق بعد. أرسِل أي طلب من الشجرة برقمك، وبعد التأكد تصبح هذه الخدمة متاحة لك. وفي الطوارئ اتصل بأحد أقاربك مباشرة.':(r==='too_soon'?'أرسلت طلبًا قبل قليل — انتظر بضع دقائق.':'لم يُرسل — تأكد من الإنترنت وحاول مرة أخرى.');
+    }).catch(function(){send.disabled=false;send.firstChild.textContent='أرسِل';msg.textContent='لم يُرسل — تأكد من الإنترنت.'});
+  });
+  if(isSos){send.style.background='#8c491a';send.style.borderColor='#6f3712'}
+  box.appendChild(send);
+  app.appendChild(box);
+}
+function keepRender(){var c=v('sCity'),n=v('sNote');render();var a=document.getElementById('sCity'),b=document.getElementById('sNote');if(a&&c)a.value=c;if(b&&n)b.value=n}
 
 function person(r){
   var top=el('div','top');
@@ -351,7 +455,8 @@ fetch(TREE_URL+'?t='+Date.now()).then(function(r){return r.json()}).then(functio
   build(t);
   var h='';try{h=decodeURIComponent(location.hash.slice(1))}catch(e){}
   sel=byPath[h]?h:ROOT.path;
-  render();
+  if(/^svc-(sos|here)$/.test(h))svc=h.slice(4);
+  render();loadPub();
   return fetch(DATA_URL+'?t='+Date.now()).then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.approved){A=j.approved;if(!form)render()}});
 }).catch(function(){app.innerHTML='<p class="muted" style="text-align:center">تعذّر تحميل الشجرة — تأكد من الإنترنت ثم أعد فتح الصفحة.</p>'});
 </script>
