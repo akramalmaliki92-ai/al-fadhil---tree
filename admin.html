@@ -133,6 +133,15 @@
 
   <div class="panel">
     <div class="row" style="justify-content:space-between">
+      <h2>أرقام العائلة — خاصة بك</h2>
+      <span id="privStatus" class="muted"></span>
+    </div>
+    <p class="sub" style="margin:0">الأرقام التي يتركها المرسلون محفوظة خارج الملف العام، ولا يراها أحد غيرك.</p>
+    <div id="privList"></div>
+  </div>
+
+  <div class="panel">
+    <div class="row" style="justify-content:space-between">
       <h2>المحادثات</h2>
       <span id="cStatus" class="muted"></span>
     </div>
@@ -147,10 +156,11 @@ var REPO='https://raw.githubusercontent.com/akramalmaliki92-ai/al-fadhil---tree/
 var EDIT='https://baytalqasid.app.n8n.cloud/webhook/family-tree-edit';
 var MOD='https://baytalqasid.app.n8n.cloud/webhook/family-tree-moderate';
 var $=function(i){return document.getElementById(i)};
-var key='',slug='',tree=null,paths=[],pending=[],trees=[],handled={},approved={};
+var key='',slug='',tree=null,paths=[],pending=[],trees=[],handled={},approved={},mainTree=null;
 
 function K(){return $('key').value.trim()}
-function bust(u){return REPO+u+'?t='+Date.now()}
+function bust(u){return u}
+function gh(u){return fetch('https://api.github.com/repos/akramalmaliki92-ai/al-fadhil---tree/contents/'+u+'?ref=main&t='+Date.now(),{headers:{Accept:'application/vnd.github.raw'},cache:'no-store'}).then(function(r){if(r.ok)return r;return fetch(REPO+u+'?t='+Date.now())})}
 
 $('enter').onclick=function(){
   key=K();
@@ -187,7 +197,7 @@ function fillSelects(){
   $('status').textContent=paths.length+' اسمًا في هذه الشجرة';
 }
 function loadTreeList(){
-  return fetch(bust('trees.json')).then(function(r){return r.ok?r.json():[]}).catch(function(){return[]}).then(function(j){
+  return gh(('trees.json')).then(function(r){return r.ok?r.json():[]}).catch(function(){return[]}).then(function(j){
     trees=Array.isArray(j)?j:[];
     var sel=$('treeSel');sel.innerHTML='';
     var o=document.createElement('option');o.value='';o.textContent='شجرة الفاضل (الرئيسية)';sel.appendChild(o);
@@ -199,14 +209,15 @@ function loadTreeList(){
 }
 function loadTree(){
   var file=slug?('tree-'+slug+'.json'):'tree.json';
-  return fetch(bust(file)).then(function(r){return r.ok?r.json():null}).then(function(j){
+  return gh((file)).then(function(r){return r.ok?r.json():null}).then(function(j){
     tree=j||{name:'?',kids:[]};fillSelects();
   }).catch(function(){$('status').textContent='تعذّر تحميل الشجرة'});
 }
 function loadMainForMerge(){
-  return fetch(bust('tree.json')).then(function(r){return r.ok?r.json():null}).then(function(j){
+  return gh(('tree.json')).then(function(r){return r.ok?r.json():null}).then(function(j){
     var sel=$('mergeTarget');sel.innerHTML='';
     if(!j)return;
+    mainTree=j;if(pending.length)drawPending();
     flatten(j,'',[]).forEach(function(p){
       var o=document.createElement('option');o.value=p.path;
       o.textContent=(p.depth?Array(p.depth+1).join('— '):'')+p.name;sel.appendChild(o);
@@ -214,7 +225,7 @@ function loadMainForMerge(){
   }).catch(function(){});
 }
 function loadPending(){
-  return fetch(bust('data.json')).then(function(r){return r.ok?r.json():null}).then(function(j){
+  return gh(('data.json')).then(function(r){return r.ok?r.json():null}).then(function(j){
     var list=(j&&j.pending)||[];
     pending=list.filter(function(x){return !handled[x.id]});
     approved=(j&&j.approved)||{};
@@ -256,7 +267,7 @@ function drawThreads(){
     d.appendChild(row);box.appendChild(d);
   });
 }
-function loadAll(){loadTreeList();loadTree();loadMainForMerge();loadPending()}
+function loadAll(){loadTreeList();loadTree();loadMainForMerge();loadPending();loadPrivate()}
 $('reload').onclick=loadAll;
 $('treeSel').onchange=function(){slug=this.value;loadTree()};
 
@@ -325,46 +336,134 @@ $('bInfo').onclick=function(){
   post(MOD,body,'تم حفظ المعلومات');
 };
 
-function label(t){return t==='info'?'معلومات واتصال':(t==='correction'?'إضافة ابن':'تعليق')}
+function label(t){return t==='info'?'معلومات واتصال':(t==='correction'?'إضافة أبناء':'تعليق')}
+var PHONE_RE=/[0-9\u0660-\u0669+][0-9\u0660-\u0669+\s-]{6,}/g;
+function nodeAt(root,path){if(!root)return null;var p=String(path).split(' / ');if(p[0]!==root.name)return null;var c=root;for(var i=1;i<p.length;i++){c=(c.kids||[]).find(function(k){return k.name===p[i]});if(!c)return null}return c}
+function splitNames(raw){return String(raw||'').replace(PHONE_RE,' ').split(/\s*[،,؛;\n]\s*|\s+و\s+/).map(function(s){return s.trim()}).filter(Boolean)}
+function cleanName(raw,anc){
+  var parts=String(raw||'').replace(/\s+/g,' ').trim().split(' ');if(!parts[0])return '';
+  var norm=function(s){return String(s).replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/\s*\(.*?\)\s*/g,'').replace(/^ال/,'').trim()};
+  var A=anc.map(norm),cut=parts.length;
+  for(var i=1;i<parts.length;i++){if(A.indexOf(norm(parts[i]))!==-1||parts[i]==='بن'){cut=i;break}}
+  return parts.slice(0,cut).join(' ');
+}
+function kidsOf(it){
+  var anc=String(it.path).split(' / ').reverse();
+  if(Array.isArray(it.kids)&&it.kids.length)return it.kids.map(function(k){return{name:k.name,kids:(k.kids||[]).map(function(g){return typeof g==='string'?g:g.name})}});
+  return splitNames(it.name).map(function(n){return{name:cleanName(n,anc),kids:[]}}).filter(function(k){return k.name});
+}
+function groupKey(it){return String(it.by||'—').replace(PHONE_RE,'').trim()}
 function drawPending(){
   var box=$('list');box.innerHTML='';
   $('pStatus').textContent=pending.length?pending.length+' طلب معلّق':'لا طلبات';
   if(!pending.length){box.innerHTML='<p class="muted">لا توجد طلبات.</p>';return}
-  pending.forEach(function(it){
-    var d=document.createElement('div');d.className='item';
-    var bits=[];
-    if(it.name)bits.push('الاسم: '+it.name);
-    if(it.birth)bits.push('ميلاد: '+it.birth);
-    if(it.death)bits.push('وفاة: '+it.death);
-    if(it.city)bits.push('السكن: '+it.city);
-    if(it.phone)bits.push('الهاتف: '+it.phone);
-    if(it.whatsapp)bits.push('واتساب: '+it.whatsapp);
-    if(it.email)bits.push('البريد: '+it.email);
-    if(it.instagram)bits.push('انستقرام: '+it.instagram);
-    if(it.telegram)bits.push('تلقرام: '+it.telegram);
-    if(it.facebook)bits.push('فيسبوك: '+it.facebook);
-    if(it.photo)bits.push('صورة: '+it.photo);
-    if(it.note)bits.push(it.note);
-    d.innerHTML='<div><span class="tag">'+label(it.type)+'</span> <span class="path">'+String(it.path).replace(/ \/ /g,' ← ')+'</span></div>'+
-      '<div>'+bits.join('<br>')+'</div><div class="who">'+(it.by||'')+' — '+String(it.at||'').slice(0,16).replace('T',' ')+'</div>';
-    var row=document.createElement('div');row.className='row';
-    var ok=document.createElement('button');ok.className='ok';ok.textContent='نشر كملاحظة';
-    ok.onclick=function(){decide(it,'approve','تم النشر — يظهر للعائلة خلال دقيقة')};
-    row.appendChild(ok);
-    if(it.type==='correction'&&it.name){
-      var addBtn=document.createElement('button');addBtn.textContent='إضافة كاسم في الشجرة';
-      addBtn.onclick=function(){
-        edit({action:'add',path:it.path,name:it.name},'أُضيف إلى الشجرة').then(function(okk){
-          if(okk)decide(it,'reject','أُضيف إلى الشجرة وأُزيل من الطلبات');
+  var groups={},order=[],seenAdd={};
+  pending.forEach(function(it){var g=groupKey(it);if(!groups[g]){groups[g]=[];order.push(g)}groups[g].push(it)});
+  order.forEach(function(g){
+    var items=groups[g];
+    var card=document.createElement('div');card.className='item';card.style.gap='12px';
+    var head=document.createElement('div');head.className='row';head.style.justifyContent='space-between';
+    var t=document.createElement('div');t.innerHTML='<span class="lbl" style="font-size:16px"></span> <span class="muted"></span>';
+    t.firstChild.textContent=g;t.lastChild.textContent=items.length+' طلب';
+    head.appendChild(t);
+    var acts=document.createElement('div');acts.className='row';
+    var all=document.createElement('button');all.className='ok';all.textContent='اعتماد الكل';
+    var rej=document.createElement('button');rej.className='warn';rej.textContent='رفض الكل';
+    acts.appendChild(all);acts.appendChild(rej);head.appendChild(acts);card.appendChild(head);
+    var plan=[];
+    items.forEach(function(it){
+      var row=document.createElement('div');
+      row.style.cssText='background:#ebddc5;border:2px solid #dcd3c4;border-radius:16px;padding:10px 13px;display:flex;flex-direction:column;gap:6px';
+      var top=document.createElement('div');
+      top.innerHTML='<span class="tag"></span> <span class="path"></span>';
+      top.firstChild.textContent=label(it.type);
+      var segs=String(it.path).split(' / ');
+      top.lastChild.textContent=segs.slice(-3).join(' ← ');
+      top.lastChild.title=String(it.path).replace(/ \/ /g,' ← ');
+      row.appendChild(top);
+      if(it.type==='correction'){
+        var node=nodeAt(mainTree,it.path),ex={};
+        (node&&node.kids||[]).forEach(function(k){ex[k.name]=1});
+        var ks=kidsOf(it);
+        if(!node){var w=document.createElement('div');w.style.color='#8c491a';w.textContent='⚠ الأب غير موجود في الشجرة حاليًا';row.appendChild(w)}
+        ks.forEach(function(k){
+          var key=it.path+'|'+k.name,dup=seenAdd[key];seenAdd[key]=1;
+          var l=document.createElement('div');l.style.cssText='font-size:15px;line-height:1.7';
+          l.textContent='＋ '+k.name+(k.kids.length?' ← أبناؤه: '+k.kids.join('، '):'');
+          if(ex[k.name]){l.textContent+='  (موجود — ستُضاف الأحفاد فقط)';l.style.color='#645c50'}
+          if(dup){l.textContent+='  (مكرر)';l.style.color='#8c491a'}
+          row.appendChild(l);
         });
+        if(node&&ks.length)plan.push({path:it.path,kids:ks});
+      }
+      var bits=[];
+      ['birth:ميلاد','death:وفاة','city:السكن','phone:هاتف','whatsapp:واتساب','email:بريد','instagram:انستقرام','telegram:تلقرام','facebook:فيسبوك','photo:صورة'].forEach(function(p){var kv=p.split(':');if(it[kv[0]])bits.push(kv[1]+': '+it[kv[0]])});
+      if(bits.length){var bi=document.createElement('div');bi.textContent=bits.join(' · ');row.appendChild(bi)}
+      if(it.note){var n=document.createElement('div');n.style.cssText='white-space:pre-wrap;font-size:15px;line-height:1.7;color:#474238';n.textContent=it.note;row.appendChild(n)}
+      var r2=document.createElement('div');r2.className='row';
+      var who=document.createElement('span');who.className='who';who.textContent=String(it.at||'').slice(0,16).replace('T',' ');r2.appendChild(who);
+      var one=document.createElement('button');one.textContent=it.type==='correction'?'إضافة هذا فقط':'نشر هذا فقط';one.style.cssText='min-height:34px;padding:5px 13px;font-size:13px';
+      one.onclick=function(){
+        if(it.type==='correction'){var ks2=kidsOf(it);edit({action:'addMany',items:[{path:it.path,kids:ks2}]},'أُضيف').then(function(ok){if(ok)decide(it,'reject','أُضيف وأُزيل من الطلبات')})}
+        else decide(it,'approve','تم النشر');
       };
-      row.appendChild(addBtn);
-    }
-    var no=document.createElement('button');no.className='warn';no.textContent='رفض';
-    no.onclick=function(){decide(it,'reject','تم الرفض')};
-    row.appendChild(no);
-    d.appendChild(row);box.appendChild(d);
+      var no=document.createElement('button');no.className='warn';no.textContent='رفض';no.style.cssText='min-height:34px;padding:5px 13px;font-size:13px';
+      no.onclick=function(){decide(it,'reject','تم الرفض')};
+      r2.appendChild(one);r2.appendChild(no);row.appendChild(r2);
+      card.appendChild(row);
+    });
+    all.onclick=function(){
+      var adds=items.filter(function(x){return x.type==='correction'}).map(function(x){return x.id});
+      var pubs=items.filter(function(x){return x.type!=='correction'}).map(function(x){return x.id});
+      if(!confirm('اعتماد '+items.length+' طلب من «'+g+'»؟'))return;
+      var step=plan.length?edit({action:'addMany',items:plan},'أُضيفت الأسماء'):Promise.resolve(true);
+      step.then(function(ok){
+        if(!ok)return;
+        items.forEach(function(x){handled[x.id]=1});
+        pending=pending.filter(function(x){return !handled[x.id]});drawPending();
+        var p=pubs.length?post(MOD,{key:K(),ids:pubs,action:'approve'},'نُشرت الملاحظات',true):Promise.resolve(true);
+        return p.then(function(){return adds.length?post(MOD,{key:K(),ids:adds,action:'reject'},'تم اعتماد الكل — يظهر خلال دقيقة',true):true});
+      });
+    };
+    rej.onclick=function(){
+      if(!confirm('رفض كل طلبات «'+g+'»؟'))return;
+      var ids=items.map(function(x){return x.id});
+      ids.forEach(function(id){handled[id]=1});
+      pending=pending.filter(function(x){return !handled[x.id]});drawPending();
+      post(MOD,{key:K(),ids:ids,action:'reject'},'تم الرفض',true);
+    };
+    box.appendChild(card);
   });
+}
+var PRIV='https://baytalqasid.app.n8n.cloud/webhook/family-tree-private';
+function loadPrivate(){
+  var box=$('privList');if(!box)return;
+  box.innerHTML='<p class="muted">جارٍ التحميل…</p>';
+  fetch(PRIV,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:K(),action:'list'})})
+   .then(function(r){return r.json()}).then(function(j){
+     box.innerHTML='';
+     var list=(j&&j.contacts)||[];
+     $('privStatus').textContent=list.length?list.length+' رقم':'لا أرقام';
+     if(!list.length){box.innerHTML='<p class="muted">لم يُرسل أحد رقمه بعد.</p>';return}
+     list.slice().reverse().forEach(function(c){
+       var d=document.createElement('div');d.className='row';
+       d.style.cssText='background:#f9f4ed;border:2px solid #dcd3c4;border-radius:16px;padding:8px 12px;margin-bottom:8px;justify-content:space-between';
+       var info=document.createElement('div');info.style.cssText='display:flex;flex-direction:column;gap:2px';
+       var nm=document.createElement('b');nm.textContent=c.by||'—';
+       var pth=document.createElement('span');pth.className='who';pth.textContent=String(c.path||'').split(' / ').slice(-2).join(' ← ')+' — '+String(c.at||'').slice(0,10);
+       info.appendChild(nm);info.appendChild(pth);
+       var tel=String(c.phone).replace(/[^0-9+]/g,'');
+       var wa=tel.replace(/^\+/,'').replace(/^0/,'964');
+       var links=document.createElement('div');links.className='row';
+       links.innerHTML='<a target="_blank" rel="noopener"><button type="button"></button></a><a target="_blank" rel="noopener"><button type="button" class="ok">واتساب</button></a>';
+       links.children[0].href='tel:'+tel;links.children[0].firstChild.textContent=c.phone;
+       links.children[1].href='https://wa.me/'+wa;
+       var del=document.createElement('button');del.className='warn';del.textContent='حذف';
+       del.onclick=function(){if(!confirm('حذف رقم '+(c.by||'')+'؟'))return;fetch(PRIV,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:K(),action:'delete',id:c.id})}).then(loadPrivate)};
+       links.appendChild(del);
+       d.appendChild(info);d.appendChild(links);box.appendChild(d);
+     });
+   }).catch(function(){box.innerHTML='<p class="muted">تعذّر التحميل</p>'});
 }
 </script>
 </body>
