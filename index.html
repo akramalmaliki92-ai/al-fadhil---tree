@@ -207,9 +207,9 @@
         <textarea id="note" rows="3" placeholder="اكتب ملاحظتك…"></textarea>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <input id="by" type="text" placeholder="اسمك (إلزامي)" style="flex:1 1 140px">
-          <input id="myPhone" type="tel" inputmode="tel" placeholder="رقمك — يراه المشرف فقط" style="flex:1 1 150px">
+          <input id="myPhone" type="tel" inputmode="tel" placeholder="رقم هاتفك (إلزامي) — يراه المشرف فقط" style="flex:1 1 150px">
         </div>
-        <div class="muted" style="font-weight:400;white-space:normal">رقمك اختياري، ولا يظهر في الشجرة — للتواصل معك عند التدقيق فقط.</div>
+        <div class="muted" style="font-weight:400;white-space:normal">رقمك لا يظهر في الشجرة — يستعمله المشرف للتأكد منك، ثم لدعوتك إلى مجموعة العشيرة.</div>
         <button id="bSend" style="align-self:flex-start">إرسال للمراجعة</button>
         <span id="sendMsg" class="muted" style="font-weight:400"></span>
       </div>
@@ -663,6 +663,7 @@ $('bSend').onclick=function(){
   by=by.replace(PHONE_RE,' ').replace(/\s+/g,' ').trim();
   if(!by){$('sendMsg').textContent='اكتب اسمك — والرقم في خانته';return}
   var myPhone=($('myPhone').value||phoneInBy).trim();
+  if(myPhone.replace(/\D/g,'').length<8){$('sendMsg').textContent='اكتب رقم هاتفك — نحتاجه للتأكد من المعلومة';$('myPhone').focus();return}
   var payload={path:sel,by:by,type:formType,note:$('note').value};
   if(formType==='correction'){
     var kids=collectKids();
