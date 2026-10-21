@@ -51,9 +51,9 @@
   .row2 input{flex:1 1 auto}
   .x{flex:0 0 52px;min-height:52px;border-radius:16px;border:2px solid #dcd3c4;background:#f9f4ed;font-size:22px;cursor:pointer;color:#474238}
   .sub{padding-inline-start:26px;display:flex;flex-direction:column;gap:8px}
-  .link{background:none;border:none;color:#8c491a;font-family:'Almarai';font-size:17px;font-weight:800;text-decoration:underline;cursor:pointer;padding:6px 0;text-align:right}
+  .link{background:none;border:none;color:#8c491a;font-family:'Almarai';font-size:17px;font-weight:800;text-decoration:underline;cursor:pointer;padding:8px 0;text-align:right;min-height:44px;display:inline-flex;align-items:center}
   .foot{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:10px;text-align:center;line-height:1.5}
-  .foot a{display:inline-block;font-weight:800}
+  .foot a{display:inline-flex;align-items:center;min-height:44px;font-weight:800}
   ::placeholder{color:#a8a092;opacity:1}
   img.photo{width:120px;height:120px;object-fit:cover;border-radius:999px;border:3px solid #dcd3c4}
   .hidden{display:none!important}
@@ -249,7 +249,8 @@ function drawForm(box,r){
         var gx=el('button','x','×');gx.type='button';gx.setAttribute('aria-label','حذف');gx.onclick=function(){k.kids.splice(j,1);render()};rr.appendChild(gx);
         sub.appendChild(rr);
       });
-      var addG=el('button','link','+ إضافة أحفاد (أبناء '+(k.name||'هذا الابن')+')');addG.type='button';addG.onclick=function(){k.kids.push('');render()};
+      var addG=btn('plain center','+ أبناء '+(k.name||'هذا الابن')+' (الأحفاد)',function(){k.kids.push('');render()});
+      addG.style.minHeight='52px';addG.style.fontSize='17px';
       sub.appendChild(addG);
       g.appendChild(sub);
       wrap.appendChild(g);
