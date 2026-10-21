@@ -163,7 +163,7 @@
 </div>
 
 <script>
-var REPO='https://raw.githubusercontent.com/akramalmaliki92-ai/al-fadhil---tree/main/';
+var REPO='https://raw.githubusercontent.com/alhamoudi-family/alhamoudi-family.github.io/main/';
 var EDIT='https://baytalqasid.app.n8n.cloud/webhook/family-tree-edit';
 var MOD='https://baytalqasid.app.n8n.cloud/webhook/family-tree-moderate';
 var $=function(i){return document.getElementById(i)};
@@ -171,7 +171,7 @@ var key='',slug='',tree=null,paths=[],pending=[],trees=[],handled={},approved={}
 
 function K(){return $('key').value.trim()}
 function bust(u){return u}
-function gh(u){return fetch('https://api.github.com/repos/akramalmaliki92-ai/al-fadhil---tree/contents/'+u+'?ref=main&t='+Date.now(),{headers:{Accept:'application/vnd.github.raw'},cache:'no-store'}).then(function(r){if(r.ok)return r;return fetch(REPO+u+'?t='+Date.now())})}
+function gh(u){return fetch('https://api.github.com/repos/alhamoudi-family/alhamoudi-family.github.io/contents/'+u+'?ref=main&t='+Date.now(),{headers:{Accept:'application/vnd.github.raw'},cache:'no-store'}).then(function(r){if(r.ok)return r;return fetch(REPO+u+'?t='+Date.now())})}
 
 $('enter').onclick=function(){
   key=K();
