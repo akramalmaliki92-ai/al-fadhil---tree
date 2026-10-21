@@ -126,9 +126,37 @@
   <div class="panel">
     <div class="row" style="justify-content:space-between">
       <h2>طلبات العائلة</h2>
+      <label class="row" style="gap:6px;font-size:14px"><input id="annNames" type="checkbox" checked style="min-width:0;width:20px;height:20px"> أعلن الأسماء الجديدة في المجموعة</label>
       <span id="pStatus" class="muted"></span>
     </div>
     <div id="list"></div>
+  </div>
+
+  <div class="panel">
+    <h2>خدمات المجموعة</h2>
+    <div class="lbl">طلبات الطوارئ و«أنا في مدينتكم»</div>
+    <div id="alertList"></div>
+    <div class="lbl" style="margin-top:8px">إضافة مناسبة (تذكير تلقائي في المجموعة قبلها بيوم وفي يومها)</div>
+    <div class="row">
+      <input id="evTitle" type="text" placeholder="عنوان المناسبة — مثال: اجتماع العشيرة السنوي" style="flex:1 1 240px">
+      <input id="evDate" type="date" style="flex:0 1 180px">
+    </div>
+    <div class="row">
+      <input id="evNote" type="text" placeholder="تفاصيل (المكان، الوقت…)" style="flex:1 1 240px">
+      <label class="row" style="gap:6px;font-size:15px"><input id="evYearly" type="checkbox" style="min-width:0;width:20px;height:20px"> تتكرر سنويًا</label>
+      <label class="row" style="gap:6px;font-size:15px"><input id="evAnn" type="checkbox" checked style="min-width:0;width:20px;height:20px"> أعلنها الآن</label>
+      <button id="evAdd" class="ok" type="button">إضافة</button>
+    </div>
+    <div id="evList"></div>
+    <div class="lbl" style="margin-top:8px">تصويت أو استشارة في المجموعة</div>
+    <input id="plQ" type="text" placeholder="السؤال — مثال: ما أنسب موعد لاجتماع العشيرة؟">
+    <textarea id="plO" rows="3" placeholder="الخيارات — كل خيار في سطر (٢ إلى ١٠)" style="border-radius:18px;width:100%"></textarea>
+    <div class="row">
+      <label class="row" style="gap:6px;font-size:15px"><input id="plAnon" type="checkbox" checked style="min-width:0;width:20px;height:20px"> تصويت سري</label>
+      <label class="row" style="gap:6px;font-size:15px"><input id="plMulti" type="checkbox" style="min-width:0;width:20px;height:20px"> يسمح بأكثر من خيار</label>
+      <button id="plSend" class="ok" type="button">نشر التصويت</button>
+    </div>
+    <span id="svcStatus" class="muted"></span>
   </div>
 
   <div class="panel">
@@ -278,7 +306,7 @@ function drawThreads(){
     d.appendChild(row);box.appendChild(d);
   });
 }
-function loadAll(){loadTreeList();loadTree();loadMainForMerge();loadPending();tgStatus(false).then(loadPrivate,loadPrivate)}
+function loadAll(){loadTreeList();loadTree();loadMainForMerge();loadPending();tgStatus(false).then(loadPrivate,loadPrivate);loadSvc()}
 $('reload').onclick=loadAll;
 $('treeSel').onchange=function(){slug=this.value;loadTree()};
 
@@ -430,6 +458,10 @@ function drawPending(){
       var step=plan.length?edit({action:'addMany',items:plan},'أُضيفت الأسماء'):Promise.resolve(true);
       step.then(function(ok){
         if(!ok)return;
+        if(plan.length&&$('annNames')&&$('annNames').checked){
+          var lines=[];plan.forEach(function(p){var father=String(p.path).split(' / ').pop();p.kids.forEach(function(k){lines.push('• '+k.name+' بن '+father+(k.kids&&k.kids.length?' — وأبناؤه: '+k.kids.join('، '):''))})});
+          if(lines.length)tgCall({action:'post',text:'🌳 أسماء جديدة أُضيفت إلى شجرة العشيرة:\n'+lines.join('\n')+'\n\nhttps://alhamoudi-family.github.io'});
+        }
         items.forEach(function(x){handled[x.id]=1});
         pending=pending.filter(function(x){return !handled[x.id]});drawPending();
         var p=pubs.length?post(MOD,{key:K(),ids:pubs,action:'approve'},'نُشرت الملاحظات',true):Promise.resolve(true);
@@ -480,6 +512,53 @@ function tgInvite(c,btn){
     btn.textContent='دُعي ✓ — إعادة';
   }).catch(function(){btn.disabled=false;btn.textContent='تأكيد ودعوة';if(w)w.close()});
 }
+
+function loadSvc(){
+  tgCall({action:'listAll'}).then(function(j){
+    if(!j||!j.ok)return;
+    var al=$('alertList');al.innerHTML='';
+    var list=(j.alerts||[]).filter(function(x){return !x.closed}).slice(0,20);
+    if(!list.length)al.innerHTML='<p class="muted">لا توجد طلبات حالية.</p>';
+    list.forEach(function(x){
+      var d=document.createElement('div');d.className='item';
+      var t=document.createElement('div');t.style.fontWeight='800';
+      t.textContent=(x.type==='sos'?'طوارئ: ':'في مدينتكم: ')+x.name+(x.kind?' — '+x.kind:'')+(x.city?' — '+x.city:'');
+      var w=document.createElement('div');w.className='who';w.textContent=String(x.at).slice(0,16).replace('T',' ')+' — '+(x.phone||'')+(x.note?' — '+x.note:'');
+      d.appendChild(t);d.appendChild(w);
+      var r=document.createElement('div');r.className='row';
+      if(x.phone){var c=document.createElement('a');c.href='tel:'+x.phone;c.innerHTML='<button type="button">اتصال</button>';r.appendChild(c)}
+      if(x.map){var m=document.createElement('a');m.href=x.map;m.target='_blank';m.innerHTML='<button type="button">الخريطة</button>';r.appendChild(m)}
+      var cl=document.createElement('button');cl.className='warn';cl.textContent=x.type==='sos'?'تمت المساعدة — إغلاق':'إزالة';
+      cl.onclick=function(){tgCall({action:'closeAlert',id:x.id}).then(loadSvc)};
+      r.appendChild(cl);d.appendChild(r);al.appendChild(d);
+    });
+    var ev=$('evList');ev.innerHTML='';
+    (j.events||[]).forEach(function(e){
+      var d=document.createElement('div');d.className='row';d.style.cssText='justify-content:space-between;background:#f9f4ed;border:2px solid #dcd3c4;border-radius:16px;padding:8px 12px;margin-top:8px';
+      var s=document.createElement('span');s.textContent=e.next+' — '+e.title+(e.yearly?' (سنويًا)':'');
+      var del=document.createElement('button');del.className='warn';del.textContent='حذف';del.style.cssText='min-height:34px;padding:4px 12px;font-size:13px';
+      del.onclick=function(){if(confirm('حذف المناسبة؟'))tgCall({action:'delEvent',id:e.id}).then(loadSvc)};
+      d.appendChild(s);d.appendChild(del);ev.appendChild(d);
+    });
+  });
+}
+$('evAdd').onclick=function(){
+  var t=$('evTitle').value.trim(),d=$('evDate').value;
+  if(!t||!d){$('svcStatus').textContent='اكتب العنوان واختر التاريخ';return}
+  tgCall({action:'addEvent',title:t,date:d,note:$('evNote').value,yearly:$('evYearly').checked,announce:$('evAnn').checked}).then(function(j){
+    $('svcStatus').textContent=j&&j.ok?'أُضيفت المناسبة ✓':'تعذّر: '+((j&&j.reason)||'');
+    if(j&&j.ok){$('evTitle').value='';$('evNote').value='';loadSvc()}
+  });
+};
+$('plSend').onclick=function(){
+  var q=$('plQ').value.trim(),o=$('plO').value.split('\n').map(function(s){return s.trim()}).filter(Boolean);
+  if(!q||o.length<2){$('svcStatus').textContent='اكتب السؤال وخيارين على الأقل';return}
+  if(!confirm('نشر التصويت في المجموعة؟'))return;
+  tgCall({action:'poll',question:q,options:o,anonymous:$('plAnon').checked,multiple:$('plMulti').checked}).then(function(j){
+    $('svcStatus').textContent=j&&j.ok?'نُشر التصويت ✓':'تعذّر: '+((j&&j.reason)||'');
+    if(j&&j.ok){$('plQ').value='';$('plO').value=''}
+  });
+};
 var PRIV='https://baytalqasid.app.n8n.cloud/webhook/family-tree-private';
 function loadPrivate(){
   var box=$('privList');if(!box)return;
