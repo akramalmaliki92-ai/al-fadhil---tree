@@ -279,8 +279,22 @@ function hasNote(p){var a=rec_(p);return !!((a.comments&&a.comments.length)||(a.
 function matches(){
   if(!query.trim())return null;
   var keep={};
+  var nz=function(s){return String(s).replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/\s*\(.*?\)\s*/g,' ').replace(/\s+/g,' ').trim()};
+  var words=nz(query).split(' ').filter(function(w){return w&&w!=='بن'&&w!=='ابن'});
   index.forEach(function(r){
-    if(r.name.indexOf(query.trim())!==-1){keep[r.path]='hit';
+    // الاسم ثم الأب ثم الجد… بالترتيب، مثل «اكرم علي لازم»
+    var line=[r.name].concat(r.chain.slice().reverse()).map(nz);
+    var ok=false;
+    if(words.length===1){ok=line[0].indexOf(words[0])!==-1}
+    else{
+      ok=true;
+      for(var i=0;i<words.length;i++){
+        var part=line[i]||'';
+        var last=i===words.length-1;
+        if(!(part===words[i]||(last&&part.indexOf(words[i])===0)||part.split(' ').indexOf(words[i])!==-1)){ok=false;break}
+      }
+    }
+    if(ok){keep[r.path]='hit';
       var p=r.path;while(p.indexOf(' / ')!==-1){p=p.slice(0,p.lastIndexOf(' / '));if(!keep[p])keep[p]='a'}}
   });
   return keep;
