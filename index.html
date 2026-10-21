@@ -173,12 +173,15 @@
       <div class="form">
         <div class="tabs">
           <button id="tC" class="small on">تعليق</button>
-          <button id="tN" class="small">إضافة ابن</button>
+          <button id="tN" class="small">إضافة أبناء</button>
           <button id="tI" class="small">معلومات واتصال</button>
         </div>
-        <div id="fName" style="display:none;flex-direction:column;gap:8px">
-          <div class="muted" style="font-weight:400;white-space:normal">سيُضاف كابن للشخص المفتوح في البطاقة — تأكد أنك اخترت الأب الصحيح.</div>
-          <input id="iName" type="text" placeholder="اسم الابن الجديد">
+        <div id="fName" style="display:none;flex-direction:column;gap:10px">
+          <div class="muted" style="font-weight:400;white-space:normal;line-height:1.7">تُضاف الأسماء كأبناء لـ <b id="kidsFor" style="color:#8c491a"></b>. اكتب الاسم المفرد فقط (مثل: «حيدر» لا «حيدر عباس غالي»)، واسمًا واحدًا في كل خانة.</div>
+          <input id="iName" type="hidden">
+          <div id="kidRows" style="display:flex;flex-direction:column;gap:10px"></div>
+          <button id="bAddKid" class="small" type="button" style="align-self:flex-start">+ ابن آخر</button>
+          <div id="kidPreview" class="muted" style="font-weight:400;white-space:normal;line-height:1.8"></div>
         </div>
         <div id="fInfo" style="display:none;flex-direction:column;gap:8px">
           <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -203,8 +206,10 @@
         <textarea id="note" rows="3" placeholder="اكتب ملاحظتك…"></textarea>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <input id="by" type="text" placeholder="اسمك (إلزامي)" style="flex:1 1 140px">
-          <button id="bSend">إرسال للمراجعة</button>
+          <input id="myPhone" type="tel" inputmode="tel" placeholder="رقمك — يراه المشرف فقط" style="flex:1 1 150px">
         </div>
+        <div class="muted" style="font-weight:400;white-space:normal">رقمك اختياري، ولا يظهر في الشجرة — للتواصل معك عند التدقيق فقط.</div>
+        <button id="bSend" style="align-self:flex-start">إرسال للمراجعة</button>
         <span id="sendMsg" class="muted" style="font-weight:400"></span>
       </div>
     </div>
@@ -222,6 +227,27 @@ var TREE_URL='https://raw.githubusercontent.com/akramalmaliki92-ai/al-fadhil---t
 
 var DATA_URL='https://raw.githubusercontent.com/akramalmaliki92-ai/al-fadhil---tree/main/data.json';
 var HOOK_URL='https://baytalqasid.app.n8n.cloud/webhook/family-tree-note';
+var PRIV_URL='https://baytalqasid.app.n8n.cloud/webhook/family-tree-private';
+var PHONE_RE=/[0-9\u0660-\u0669+][0-9\u0660-\u0669+\s-]{6,}/g;
+var kidsDraft=[{name:'',kids:[]}];
+// يزيل اسم الأب والأجداد المكتوبة بعد الاسم، وأي أرقام
+function cleanName(raw,ancestors){
+  var w=String(raw||'').replace(PHONE_RE,' ').replace(/[\.\-_]/g,' ').replace(/\s+/g,' ').trim();
+  if(!w)return '';
+  var parts=w.split(' ');
+  var norm=function(s){return String(s).replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/\s*\(.*?\)\s*/g,'').replace(/^ال/,'').trim()};
+  var anc=ancestors.map(norm);
+  var cut=parts.length;
+  for(var i=1;i<parts.length;i++){
+    if(anc.indexOf(norm(parts[i]))!==-1||(parts[i]==='بن'||parts[i]==='ابن')){cut=i;break}
+  }
+  var keep=parts.slice(0,cut);
+  if(keep[0]==='عبد'&&keep.length===1&&parts[1])keep.push(parts[1]);
+  return keep.join(' ');
+}
+function splitNames(raw){
+  return String(raw||'').split(/\s*[،,؛;\n]\s*|\s+و\s+/).map(function(s){return s.trim()}).filter(Boolean);
+}
 
 var index=[],byPath={},ROOT=null;
 function build(TREE){
@@ -602,6 +628,7 @@ function render(){
   $('tN').className='small'+(formType==='correction'?' on':'');
   $('tI').className='small'+(formType==='info'?' on':'');
   $('fName').style.display=formType==='correction'?'flex':'none';
+  if(formType==='correction')drawKids(r);
   $('fInfo').style.display=formType==='info'?'flex':'none';
   if(allOpen)renderAll();
 }
@@ -631,8 +658,21 @@ $('bSend').onclick=function(){
   var by=$('by').value.trim();
   if(!by){$('sendMsg').textContent='اكتب اسمك أولًا';return}
   try{localStorage.setItem('family-tree-by',by)}catch(e){}
+  var phoneInBy=(by.match(PHONE_RE)||[]).join(' ').trim();
+  by=by.replace(PHONE_RE,' ').replace(/\s+/g,' ').trim();
+  if(!by){$('sendMsg').textContent='اكتب اسمك — والرقم في خانته';return}
+  var myPhone=($('myPhone').value||phoneInBy).trim();
   var payload={path:sel,by:by,type:formType,note:$('note').value};
-  if(formType==='correction')payload.name=$('iName').value;
+  if(formType==='correction'){
+    var kids=collectKids();
+    if(!kids.length){$('sendMsg').textContent='اكتب اسم ابن واحد على الأقل';return}
+    payload.kids=kids;
+    payload.name=kids.map(function(k){return k.name}).join('، ');
+  }
+  if(myPhone){
+    try{localStorage.setItem('family-tree-phone',myPhone)}catch(e){}
+    fetch(PRIV_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({by:by,path:sel,phone:myPhone})}).catch(function(){});
+  }
   if(formType==='info'){
     payload.birth=$('iBirth').value;payload.death=$('iDeath').value;payload.city=$('iCity').value;payload.photo=$('iPhoto').value;
     payload.phone=$('iPhone').value;payload.whatsapp=$('iWhats').value;payload.email=$('iEmail').value;
@@ -645,6 +685,7 @@ $('bSend').onclick=function(){
    .then(function(res){if(!res.ok)throw 0;
      $('sendMsg').textContent='تم الإرسال — سيظهر بعد الموافقة';
      ['note','iName','iBirth','iDeath','iCity','iPhoto','iPhone','iWhats','iEmail','iInsta','iTg','iFb'].forEach(function(id){$(id).value=''});
+     kidsDraft=[{name:'',kids:[]}];render();
    })
    .catch(function(){$('sendMsg').textContent='تعذّر الإرسال — حاول مرة أخرى'});
 };
@@ -676,7 +717,63 @@ $('bPdf').onclick=function(){
     setTimeout(function(){w.print()},600);
   });
 };
-try{$('by').value=localStorage.getItem('family-tree-by')||''}catch(e){}
+try{$('by').value=localStorage.getItem('family-tree-by')||'';$('myPhone').value=localStorage.getItem('family-tree-phone')||''}catch(e){}
+function ancestorsOf(r){return [r.name].concat(r.chain.slice().reverse())}
+function existingKids(r){var s={};r.kids.forEach(function(k){s[k.name]=1});return s}
+function collectKids(){
+  var r=byPath[sel]||ROOT,anc=ancestorsOf(r),out=[],seen={};
+  kidsDraft.forEach(function(k){
+    splitNames(k.name).forEach(function(nm,i,arr){
+      var n=cleanName(nm,anc);if(!n||seen[n])return;seen[n]=1;
+      var gk=[];
+      if(i===arr.length-1)(k.kids||[]).forEach(function(g){splitNames(g).forEach(function(gg){var c=cleanName(gg,[n].concat(anc));if(c&&gk.indexOf(c)===-1)gk.push(c)})});
+      out.push({name:n,kids:gk});
+    });
+  });
+  return out;
+}
+function drawKids(r){
+  $('kidsFor').textContent=r.name;
+  var box=$('kidRows');
+  if(box.dataset.for!==r.path){box.dataset.for=r.path;kidsDraft=[{name:'',kids:[]}]}
+  box.innerHTML='';
+  kidsDraft.forEach(function(k,i){
+    var card=el('div');
+    card.style.cssText='display:flex;flex-direction:column;gap:7px;padding:10px;border-radius:18px;background:#f9f4ed;border:2px solid #dcd3c4';
+    var row=el('div');row.style.cssText='display:flex;gap:6px;align-items:center';
+    var inp=document.createElement('input');inp.type='text';inp.value=k.name;inp.placeholder='اسم الابن '+(i+1);inp.style.flex='1 1 auto';
+    inp.oninput=function(){k.name=inp.value;preview()};
+    row.appendChild(inp);
+    if(kidsDraft.length>1){var x=el('button','small','×');x.type='button';x.style.minWidth='36px';x.onclick=function(){kidsDraft.splice(i,1);drawKids(r)};row.appendChild(x)}
+    card.appendChild(row);
+    (k.kids||[]).forEach(function(g,j){
+      var gr=el('div');gr.style.cssText='display:flex;gap:6px;align-items:center;padding-inline-start:18px';
+      gr.appendChild(el('span','muted','↳'));
+      var gi=document.createElement('input');gi.type='text';gi.value=g;gi.placeholder='ابنه';gi.style.cssText='flex:1 1 auto;font-size:15px;padding:8px 14px';
+      gi.oninput=function(){k.kids[j]=gi.value;preview()};
+      gr.appendChild(gi);
+      var gx=el('button','small','×');gx.type='button';gx.style.minWidth='36px';gx.onclick=function(){k.kids.splice(j,1);drawKids(r)};gr.appendChild(gx);
+      card.appendChild(gr);
+    });
+    var addG=el('button','small','+ أبناؤه');addG.type='button';addG.style.cssText='align-self:flex-start;min-height:34px;padding:5px 13px;font-size:13px';
+    addG.onclick=function(){k.kids=k.kids||[];k.kids.push('');drawKids(r);var ins=box.querySelectorAll('input');ins[ins.length-1]&&ins[ins.length-1].focus()};
+    card.appendChild(addG);
+    box.appendChild(card);
+  });
+  preview();
+}
+function preview(){
+  var r=byPath[sel]||ROOT,ex=existingKids(r),list=collectKids(),pv=$('kidPreview');
+  if(!list.length){pv.textContent='';return}
+  pv.innerHTML='';
+  pv.appendChild(el('div','lbl','سيُرسَل هكذا:'));
+  list.forEach(function(k){
+    var line=el('div',null,'• '+k.name+' بن '+r.name+(k.kids.length?' — أبناؤه: '+k.kids.join('، '):''));
+    if(ex[k.name]){line.textContent+=' (موجود مسبقًا)';line.style.color='#8c491a'}
+    pv.appendChild(line);
+  });
+}
+$('bAddKid').onclick=function(){kidsDraft.push({name:'',kids:[]});drawKids(byPath[sel]||ROOT);var ins=$('kidRows').querySelectorAll('input');ins[ins.length-1]&&ins[ins.length-1].focus()};
 window.addEventListener('resize',function(){if(ROOT)render()});
 window.addEventListener('orientationchange',function(){if(ROOT)render()});
 
