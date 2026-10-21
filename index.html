@@ -757,18 +757,18 @@ function drawKids(r){
     var inp=document.createElement('input');inp.type='text';inp.value=k.name;inp.placeholder='اسم الابن '+(i+1);inp.style.flex='1 1 auto';
     inp.oninput=function(){k.name=inp.value;preview()};
     row.appendChild(inp);
-    if(kidsDraft.length>1){var x=el('button','small','×');x.type='button';x.style.minWidth='36px';x.onclick=function(){kidsDraft.splice(i,1);drawKids(r)};row.appendChild(x)}
+    if(kidsDraft.length>1){var x=el('button','small','×');x.type='button';x.style.minWidth='44px';x.style.minHeight='44px';x.onclick=function(){kidsDraft.splice(i,1);drawKids(r)};row.appendChild(x)}
     card.appendChild(row);
     (k.kids||[]).forEach(function(g,j){
       var gr=el('div');gr.style.cssText='display:flex;gap:6px;align-items:center;padding-inline-start:18px';
       gr.appendChild(el('span','muted','↳'));
-      var gi=document.createElement('input');gi.type='text';gi.value=g;gi.placeholder='ابنه';gi.style.cssText='flex:1 1 auto;font-size:15px;padding:8px 14px';
+      var gi=document.createElement('input');gi.type='text';gi.value=g;gi.placeholder='ابنه';gi.style.cssText='flex:1 1 auto;font-size:16px;padding:9px 14px;min-height:44px';
       gi.oninput=function(){k.kids[j]=gi.value;preview()};
       gr.appendChild(gi);
-      var gx=el('button','small','×');gx.type='button';gx.style.minWidth='36px';gx.onclick=function(){k.kids.splice(j,1);drawKids(r)};gr.appendChild(gx);
+      var gx=el('button','small','×');gx.type='button';gx.style.minWidth='44px';gx.style.minHeight='44px';gx.onclick=function(){k.kids.splice(j,1);drawKids(r)};gr.appendChild(gx);
       card.appendChild(gr);
     });
-    var addG=el('button','small','+ أبناؤه');addG.type='button';addG.style.cssText='align-self:flex-start;min-height:34px;padding:5px 13px;font-size:13px';
+    var addG=el('button','small','+ أبناؤه');addG.type='button';addG.style.cssText='align-self:flex-start;min-height:44px;padding:8px 16px;font-size:14px';
     addG.onclick=function(){k.kids=k.kids||[];k.kids.push('');drawKids(r);var ins=box.querySelectorAll('input');ins[ins.length-1]&&ins[ins.length-1].focus()};
     card.appendChild(addG);
     box.appendChild(card);
