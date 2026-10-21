@@ -35,7 +35,7 @@
   .inner{position:absolute;top:0;right:0;width:max-content;transform-origin:top right}
   .grid{display:grid;gap:18px;align-items:start}
   .card{border-radius:24px;background:#ebddc5;border:2px solid #dcd3c4;padding:20px 18px;display:flex;flex-direction:column;gap:14px}
-  .card h2{margin:0;font-family:'Rakkas',serif;font-weight:400;font-size:30px;line-height:1.15}
+  .card h2{margin:6px 0 2px;font-family:'Rakkas',serif;font-weight:400;font-size:30px;line-height:1.35}
   .chain{font-size:14px;line-height:1.8;color:#645c50}
   .rule{height:2px;background:#dcd3c4}
   .lbl{font-size:13px;font-weight:800;color:#474238}
@@ -191,18 +191,15 @@
           </div>
           <input id="iCity" type="text" placeholder="مكان السكن">
           <input id="iPhoto" type="text" placeholder="رابط صورة شخصية (اختياري)">
-          <div class="lbl" style="margin-top:2px">معلومات الاتصال</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <input id="iPhone" type="tel" placeholder="رقم الهاتف" style="flex:1 1 150px">
-            <input id="iWhats" type="tel" placeholder="واتساب (إن اختلف)" style="flex:1 1 150px">
-          </div>
+          <div class="lbl" style="margin-top:2px">حسابات التواصل (تظهر للعائلة)</div>
+          <input id="iPhone" type="hidden"><input id="iWhats" type="hidden">
           <input id="iEmail" type="email" placeholder="البريد الإلكتروني">
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <input id="iInsta" type="text" placeholder="انستقرام @" style="flex:1 1 130px">
             <input id="iTg" type="text" placeholder="تلقرام @" style="flex:1 1 130px">
             <input id="iFb" type="text" placeholder="فيسبوك" style="flex:1 1 130px">
           </div>
-          <div class="muted" style="font-weight:400;white-space:normal">ما تكتبه هنا يظهر لكل من يفتح الرابط — لا تدرج رقمًا لغيرك دون إذنه.</div>
+          <div class="muted" style="font-weight:400;white-space:normal">ما تكتبه هنا يظهر لكل من يفتح الرابط. رقم الهاتف يُكتب في الأسفل فقط ولا يراه غير المشرف.</div>
         </div>
         <textarea id="note" rows="3" placeholder="اكتب ملاحظتك…"></textarea>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
