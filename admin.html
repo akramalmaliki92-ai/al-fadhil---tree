@@ -136,6 +136,17 @@
       <h2>أرقام العائلة — خاصة بك</h2>
       <span id="privStatus" class="muted"></span>
     </div>
+    <div id="tgBox" style="background:#e1eecc;border:2px solid #ccdbb2;border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+      <div class="row" style="justify-content:space-between">
+        <b id="tgTitle">مجموعة تلقرام</b>
+        <button id="tgCheck" type="button" style="min-height:36px;padding:6px 14px;font-size:14px">فحص الاتصال</button>
+      </div>
+      <span id="tgStatus" class="muted"></span>
+      <div class="row">
+        <input id="tgText" type="text" placeholder="خبر أو إعلان يُنشر في المجموعة" style="flex:1 1 240px">
+        <button id="tgPost" class="ok" type="button">نشر في المجموعة</button>
+      </div>
+    </div>
     <p class="sub" style="margin:0">الأرقام التي يتركها المرسلون محفوظة خارج الملف العام، ولا يراها أحد غيرك.</p>
     <div id="privList"></div>
   </div>
@@ -267,7 +278,7 @@ function drawThreads(){
     d.appendChild(row);box.appendChild(d);
   });
 }
-function loadAll(){loadTreeList();loadTree();loadMainForMerge();loadPending();loadPrivate()}
+function loadAll(){loadTreeList();loadTree();loadMainForMerge();loadPending();tgStatus(false).then(loadPrivate,loadPrivate)}
 $('reload').onclick=loadAll;
 $('treeSel').onchange=function(){slug=this.value;loadTree()};
 
@@ -435,6 +446,40 @@ function drawPending(){
     box.appendChild(card);
   });
 }
+
+var TG='https://baytalqasid.app.n8n.cloud/webhook/family-tree-telegram';
+var tgInvited={};
+function tgCall(body){return fetch(TG,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({key:K()},body))}).then(function(r){return r.json()})}
+function tgStatus(detect){
+  $('tgStatus').textContent='جارٍ الفحص…';
+  return tgCall({action:detect?'detect':'status'}).then(function(j){
+    if(!j||j.ok===false){$('tgStatus').textContent='تعذّر الاتصال بالبوت';return}
+    tgInvited=j.invited||{};
+    if(!j.chatId){$('tgTitle').textContent='مجموعة تلقرام — غير مربوطة';$('tgStatus').textContent='أضف البوت @alhamoudi_tree_bot إلى المجموعة واجعله مشرفًا، ثم اكتب أي رسالة في المجموعة واضغط «فحص الاتصال».';return}
+    $('tgTitle').textContent='مجموعة تلقرام: '+(j.title||j.chatId);
+    $('tgStatus').textContent=j.botIsAdmin?'البوت مشرف ✓ — الدعوات جاهزة':'⚠ البوت ليس مشرفًا أو بلا صلاحية «دعوة المستخدمين» — عدّلها في إعدادات المجموعة';
+  }).catch(function(){$('tgStatus').textContent='تعذّر الاتصال'});
+}
+$('tgCheck').onclick=function(){tgStatus(true).then(loadPrivate)};
+$('tgPost').onclick=function(){
+  var t=$('tgText').value.trim();if(!t)return;
+  if(!confirm('نشر هذا في مجموعة العشيرة؟'))return;
+  tgCall({action:'post',text:t}).then(function(j){$('tgStatus').textContent=j&&j.ok?'نُشر في المجموعة ✓':'تعذّر النشر: '+((j&&j.reason)||'');if(j&&j.ok)$('tgText').value=''});
+};
+function tgInvite(c,btn){
+  btn.disabled=true;btn.textContent='جارٍ إنشاء الدعوة…';
+  var w=window.open('','_blank');
+  tgCall({action:'invite',name:c.by||'',phone:c.phone}).then(function(j){
+    btn.disabled=false;
+    if(!j||!j.ok){btn.textContent='تأكيد ودعوة';if(w)w.close();alert('تعذّر: '+((j&&j.reason)||'خطأ'));return}
+    var tel=String(c.phone).replace(/[^0-9+]/g,'').replace(/^\+/,'').replace(/^0/,'964');
+    var msg='السلام عليكم '+(c.by||'')+'\nتم التأكد من معلوماتك في شجرة عشائر الحمودي، شكرًا لمشاركتك.\nهذا رابط انضمامك إلى مجموعة العشيرة على تلقرام (خاص بك، صالح ٧ أيام):\n'+j.link;
+    var url='https://wa.me/'+tel+'?text='+encodeURIComponent(msg);
+    if(w)w.location=url;else location.href=url;
+    tgInvited[String(c.phone).replace(/\D/g,'')]={at:new Date().toISOString()};
+    btn.textContent='دُعي ✓ — إعادة';
+  }).catch(function(){btn.disabled=false;btn.textContent='تأكيد ودعوة';if(w)w.close()});
+}
 var PRIV='https://baytalqasid.app.n8n.cloud/webhook/family-tree-private';
 function loadPrivate(){
   var box=$('privList');if(!box)return;
@@ -460,6 +505,10 @@ function loadPrivate(){
        links.children[1].href='https://wa.me/'+wa;
        var del=document.createElement('button');del.className='warn';del.textContent='حذف';
        del.onclick=function(){if(!confirm('حذف رقم '+(c.by||'')+'؟'))return;fetch(PRIV,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:K(),action:'delete',id:c.id})}).then(loadPrivate)};
+       var inv=document.createElement('button');inv.type='button';inv.className='ok';
+       inv.textContent=tgInvited[String(c.phone).replace(/\D/g,'')]?'دُعي ✓ — إعادة':'تأكيد ودعوة';
+       inv.onclick=function(){tgInvite(c,inv)};
+       links.appendChild(inv);
        links.appendChild(del);
        d.appendChild(info);d.appendChild(links);box.appendChild(d);
      });
