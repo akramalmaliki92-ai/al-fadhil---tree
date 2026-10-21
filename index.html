@@ -17,7 +17,8 @@
   h1{margin:0;font-family:'Rakkas',serif;font-weight:400;font-size:clamp(28px,6vw,44px);line-height:1.05}
   .kicker{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;letter-spacing:.06em;color:#8c491a}
   .dot{width:12px;height:12px;border-radius:999px;background:#c67139}
-  .btns{display:flex;flex-wrap:wrap;gap:8px}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;flex:1 1 100%}
+  h1{white-space:nowrap;line-height:1.15}
   button,label.file{padding:11px 17px;border-radius:999px;border:2px solid #dcd3c4;background:#f9f4ed;color:#474238;font-family:'Almarai';font-size:15px;font-weight:800;cursor:pointer;white-space:nowrap;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
   button.on{background:#c67139;border-color:#b2622d;color:#fff2eb}
   button.mini{width:44px;height:44px;padding:0;font-size:20px;line-height:1}
@@ -96,7 +97,7 @@
 <body>
 <div class="wrap">
   <div class="bar">
-    <div style="display:flex;flex-direction:column;gap:5px">
+    <div style="display:flex;flex-direction:column;gap:5px;flex:1 1 auto;min-width:max-content">
       <div class="kicker"><span class="dot"></span><span>قبيلة بني مالك ← آل إبراهيم</span></div>
       <h1>عشائر الحمودي</h1>
     </div>
